@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TaskFlow Pro — Task Performance Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     LOGIN
+═══════════════════════════════════════════════════════ -->
+<div id="view-login">
+  <div class="login-panel">
+    <div class="login-logo">
+      <div class="login-logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div class="login-logo-text">Task<span>Flow</span> Pro</div>
+    </div>
+    <div class="login-heading">
+      <h2>Welcome back</h2>
+      <p>Sign in to your account</p>
+    </div>
+    <div class="login-form">
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        <input id="login-email" class="form-input" type="email" placeholder="you@hayleys.com" autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input id="login-password" class="form-input" type="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <div id="login-error" style="display:none;color:#dc2626;font-size:0.8125rem;margin-bottom:6px;text-align:center"></div>
+      <button id="login-btn" class="btn btn-primary btn-lg login-btn" onclick="doLogin()">Sign In</button>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);text-align:center">
+        <div style="font-size:0.7rem;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Dev shortcuts</div>
+        <button class="btn btn-ghost btn-sm" onclick="devLogin('keerthana.kiritharan@hayleys.com','qhse1234')" style="font-size:0.75rem;border:1px dashed #444">Employee</button>
+        <button class="btn btn-ghost btn-sm" onclick="devLogin('niroshan.weerasooriya@hayleys.com','qhse1234')" style="font-size:0.75rem;border:1px dashed #444">Supervisor</button>
+        <button class="btn btn-ghost btn-sm" onclick="devLogin('nisal.liyanage@hayleys.com','qhse1234')" style="font-size:0.75rem;border:1px dashed #444">HOD</button>
+        <button class="btn btn-ghost btn-sm" onclick="devLogin('admin@hayleys.com','qhse1234')" style="font-size:0.75rem;border:1px dashed #444">Admin</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     APP SHELL
+═══════════════════════════════════════════════════════ -->
+<div id="view-app" class="app-shell hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-mark">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div class="sb-logo-text">Task<span>Flow</span></div>
+    </div>
+
+    <div class="sb-scroll" id="sidebar-nav"></div>
+
+    <div class="sb-role-card" id="sb-user-card"></div>
+  </aside>
+
+  <!-- MAIN AREA -->
+  <div class="main-area">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-heading">
+        <h1 id="topbar-title">Dashboard</h1>
+        <p id="topbar-sub">Thursday, 31 July 2026</p>
+      </div>
+      <div class="topbar-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" placeholder="Search tasks, people…" />
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" onclick="navigate('notifications')" title="Notifications" style="position:relative">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span id="notif-topbar-badge" style="display:none;position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;background:var(--c-red-500,#ef4444);color:#fff;font-size:10px;font-weight:700;border-radius:8px;line-height:16px;text-align:center"></span>
+        </button>
+        <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
+          <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+        <div class="d-flex items-center gap-8" style="padding:4px 10px; background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--r-lg); cursor:pointer" id="topbar-user"></div>
+      </div>
+    </header>
+
+    <!-- PAGE ROUTER -->
+    <main class="page-content">
+
+      <!-- ─── DASHBOARD ─────────────────────────── -->
+      <div class="page hidden" id="page-dashboard">
+        <div id="dash-content"></div>
+      </div>
+
+      <!-- ─── TASKS LIST ─────────────────────────── -->
+      <div class="page hidden" id="page-tasks">
+        <!-- Toolbar -->
+        <div class="d-flex items-center justify-between gap-12 mb-20">
+          <div class="d-flex gap-8 items-center">
+            <div style="display:flex;gap:2px;background:var(--clr-surface-2);border:1px solid var(--clr-border);padding:3px;border-radius:var(--r-md)">
+              <button class="btn btn-sm" id="view-list-btn" onclick="setTaskView('list')" style="padding:5px 10px;border-radius:6px;background:var(--clr-surface);box-shadow:var(--shadow-xs)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                List
+              </button>
+              <button class="btn btn-sm btn-ghost" id="view-kanban-btn" onclick="setTaskView('kanban')" style="padding:5px 10px;border-radius:6px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Kanban
+              </button>
+            </div>
+            <select id="filter-status" class="form-input" style="width:auto;padding:6px 28px 6px 10px;font-size:0.75rem" onchange="applyTaskFilters()">
+              <option value="">All Statuses</option>
+              <option value="pending">Pending Acceptance</option>
+              <option value="inprogress">In Progress</option>
+              <option value="review">Under Review</option>
+              <option value="completed">Completed</option>
+              <option value="overdue">Overdue</option>
+              <option value="floating">Floating</option>
+            </select>
+            <select id="filter-category" class="form-input" style="width:auto;padding:6px 28px 6px 10px;font-size:0.75rem" onchange="applyTaskFilters()">
+              <option value="">All Categories</option>
+            </select>
+            <select id="filter-priority" class="form-input" style="width:auto;padding:6px 28px 6px 10px;font-size:0.75rem" onchange="applyTaskFilters()">
+              <option value="">All Priorities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="d-flex gap-8 items-center">
+            <span id="tasks-count" class="text-muted text-xs"></span>
+            <button class="btn btn-primary" id="create-task-btn" onclick="navigate('task-create')" style="display:none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Create Task
+            </button>
+          </div>
+        </div>
+
+        <!-- List View -->
+        <div id="tasks-list-view">
+          <div class="card" style="padding:0;overflow:hidden">
+            <div class="table-wrap">
+              <table class="table" id="tasks-table">
+                <thead>
+                  <tr>
+                    <th>Task</th>
+                    <th>Category</th>
+                    <th id="th-priority">Priority</th>
+                    <th id="th-assignee">Assignee(s)</th>
+                    <th id="th-duedate">Due Date</th>
+                    <th id="th-est-time">Est. Time</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tasks-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kanban View -->
+        <div id="tasks-kanban-view" class="hidden">
+          <div class="kanban-board" id="kanban-board"></div>
+        </div>
+      </div>
+
+      <!-- ─── TASK CREATE ─────────────────────────── -->
+      <div class="page hidden" id="page-task-create">
+        <div style="max-width:720px;margin:0 auto">
+          <div class="d-flex items-center gap-8 mb-24">
+            <button class="btn btn-ghost btn-sm" onclick="navigate('tasks')" style="padding:5px 8px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            </button>
+            <div>
+              <h2 style="font-family:var(--font-display);font-size:1.125rem;font-weight:700;color:var(--clr-text)" id="tc-page-title">Create New Task</h2>
+              <p class="text-muted text-xs" id="tc-page-sub">Fill in details, assign, then schedule notification</p>
+            </div>
+          </div>
+
+          <!-- Steps -->
+          <div class="steps mb-24" id="create-steps">
+            <div class="step active" id="step-1"><div class="step-num">1</div><div class="step-label">Task Details</div></div>
+            <div class="step-line"></div>
+            <div class="step" id="step-2"><div class="step-num">2</div><div class="step-label">Assignment</div></div>
+            <div class="step-line"></div>
+            <div class="step" id="step-3"><div class="step-num">3</div><div class="step-label">Notifications</div></div>
+          </div>
+
+          <!-- Step 1: Details -->
+          <div id="create-panel-1" class="card">
+            <div class="section-title mb-16">Task Details</div>
+            <div class="d-flex flex-col gap-16">
+              <div class="form-group">
+                <label class="form-label form-label-required">Task Title</label>
+                <input class="form-input" type="text" placeholder="e.g. Q3 Safety Site Inspection" id="tc-title" />
+              </div>
+              <div class="form-group">
+                <label class="form-label form-label-required">Description</label>
+                <textarea class="form-input" rows="4" placeholder="Describe the task, scope, and expected deliverables…" id="tc-desc"></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label form-label-required">Category</label>
+                  <select class="form-input" id="tc-category">
+                    <option value="">Select category</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label form-label-required" id="tc-hours-label">Estimated Time</label>
+                  <div class="d-flex gap-8">
+                    <input class="form-input" type="number" placeholder="4" min="0" step="0.5" id="tc-hours" style="width:80px;flex-shrink:0" />
+                    <select class="form-input" id="tc-time-unit" style="flex:1">
+                      <option value="h">Hours</option>
+                      <option value="d">Days</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group" id="priority-group">
+                <label class="form-label form-label-required">Priority</label>
+                <div class="pill-select" id="tc-priority-select">
+                  <div class="pill-option high" onclick="selectPriority('high',this)">
+                    <span class="priority-dot high"></span> High
+                  </div>
+                  <div class="pill-option medium selected" onclick="selectPriority('medium',this)">
+                    <span class="priority-dot medium"></span> Medium
+                  </div>
+                  <div class="pill-option low" onclick="selectPriority('low',this)">
+                    <span class="priority-dot low"></span> Low
+                  </div>
+                </div>
+              </div>
+              <!-- ── Category-specific fields ─────────────────── -->
+
+              <!-- Work Tracking fields -->
+              <div id="fields-WorkTracking" class="cat-fields hidden" style="display:none;flex-direction:column;gap:14px;padding:16px;background:var(--clr-surface-2);border:1px solid var(--clr-border);border-radius:var(--r-lg)">
+                <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--clr-text-3)">Work Tracking Details</div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Site Name</label>
+                    <input class="form-input" id="wt-sitename" placeholder="e.g. Colombo Plant" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Division</label>
+                    <input class="form-input" id="wt-division" placeholder="e.g. QHSE" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Monitoring Type</label>
+                    <input class="form-input" id="wt-monitoringtype" placeholder="e.g. Routine, Audit" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Inspected By</label>
+                    <input class="form-input" id="wt-inspectedby" placeholder="Inspector name" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Site In-Charge</label>
+                    <input class="form-input" id="wt-siteincharge" placeholder="In-charge name" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Contact No.</label>
+                    <input class="form-input" id="wt-contactno" placeholder="+94 XX XXX XXXX" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Inspection Hrs</label>
+                    <input class="form-input" type="number" min="0" step="0.5" id="wt-inspectionhrs" placeholder="0" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Reporting Hrs</label>
+                    <input class="form-input" type="number" min="0" step="0.5" id="wt-reportinghrs" placeholder="0" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Travelling Hrs</label>
+                    <input class="form-input" type="number" min="0" step="0.5" id="wt-travellinghrs" placeholder="0" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">NCs Raised</label>
+                    <input class="form-input" type="number" min="0" id="wt-ncraised" placeholder="0" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">NCs Closed</label>
+                    <input class="form-input" type="number" min="0" id="wt-ncclosed" placeholder="0" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Report Status</label>
+                    <select class="form-input" id="wt-reportstatus">
+                      <option value="">Select</option>
+                      <option>Draft</option>
+                      <option>Submitted</option>
+                      <option>Approved</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Support Service fields -->
+              <div id="fields-SupportService" class="cat-fields hidden" style="display:none;flex-direction:column;gap:14px;padding:16px;background:var(--clr-surface-2);border:1px solid var(--clr-border);border-radius:var(--r-lg)">
+                <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--clr-text-3)">Service Request Details</div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Nature of Service</label>
+                    <input class="form-input" id="ss-natureofservice" placeholder="e.g. IT Support, Maintenance" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Division</label>
+                    <input class="form-input" id="ss-division" placeholder="Requesting division" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Requester Name</label>
+                    <input class="form-input" id="ss-requestername" placeholder="Name of requester" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Total Time by Employee (hrs)</label>
+                    <input class="form-input" type="number" min="0" step="0.5" id="ss-timebyemployee" placeholder="0" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Reviewed By</label>
+                    <input class="form-input" id="ss-reviewedby" placeholder="Reviewer name" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Total Time for Review (hrs)</label>
+                    <input class="form-input" type="number" min="0" step="0.5" id="ss-timeforreview" placeholder="0" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Training & Project fields -->
+              <div id="fields-TrainingProject" class="cat-fields hidden" style="display:none;flex-direction:column;gap:14px;padding:16px;background:var(--clr-surface-2);border:1px solid var(--clr-border);border-radius:var(--r-lg)">
+                <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--clr-text-3)">Training / Project Details</div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Activity Name</label>
+                    <input class="form-input" id="tp-activityname" placeholder="e.g. Fire Safety Training" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Activity Category</label>
+                    <select class="form-input" id="tp-activitycategory">
+                      <option value="">Select</option>
+                      <option>Training</option>
+                      <option>Workshop</option>
+                      <option>Project</option>
+                      <option>Meeting</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Mode</label>
+                    <select class="form-input" id="tp-mode">
+                      <option value="">Select</option>
+                      <option>In-person</option>
+                      <option>Online</option>
+                      <option>Hybrid</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Scope</label>
+                    <input class="form-input" id="tp-scope" placeholder="e.g. Internal, External" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Conducted By</label>
+                    <input class="form-input" id="tp-conductedby" placeholder="Trainer / Facilitator" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Duration (hrs)</label>
+                    <input class="form-input" type="number" min="0" step="0.5" id="tp-duration" placeholder="0" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Planned Participants</label>
+                    <input class="form-input" type="number" min="0" id="tp-planned" placeholder="0" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">Actual Participants</label>
+                    <input class="form-input" type="number" min="0" id="tp-actual" placeholder="0" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── End category-specific fields ──────────── -->
+
+              <div class="form-group">
+                <label class="form-label">Attachments</label>
+                <div id="attachment-dropzone" style="border:1.5px dashed var(--clr-border-md);border-radius:var(--r-md);padding:20px;text-align:center;cursor:pointer;transition:all var(--t-fast);position:relative"
+                     onclick="document.getElementById('tc-file-input').click()"
+                     ondragover="event.preventDefault();this.style.borderColor='var(--clr-primary)';this.style.background='var(--clr-primary-surface)'"
+                     ondragleave="this.style.borderColor='var(--clr-border-md)';this.style.background=''"
+                     ondrop="handleAttachmentDrop(event)">
+                  <input type="file" id="tc-file-input" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.mp4,.mov,.avi,.mkv" style="display:none" onchange="handleAttachmentSelect(this.files)" />
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--clr-text-3)" stroke-width="1.5" style="margin:0 auto 8px;display:block"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                  <p class="text-sm text-secondary">Click or drag files here</p>
+                  <p class="text-xs text-muted mt-4">PDF, DOCX, XLSX, Images, Videos up to 20 MB each</p>
+                </div>
+                <div id="attachment-list" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
+              </div>
+              <div class="d-flex justify-end">
+                <button class="btn btn-primary" onclick="goStep(2)">Next: Assignment →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Assignment -->
+          <div id="create-panel-2" class="card hidden">
+            <div class="section-title mb-20">Assignment</div>
+            <div class="d-flex flex-col gap-20">
+
+              <!-- Publish Mode -->
+              <div class="form-group" style="margin:0">
+                <label class="form-label" style="margin-bottom:10px">Publish Mode</label>
+                <div class="pill-select" id="tc-mode-select">
+                  <div class="pill-option selected" onclick="selectMode('assigned',this)" data-mode="assigned">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+                    Assigned (direct)
+                  </div>
+                  <div class="pill-option" onclick="selectMode('floating',this)" data-mode="floating">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    Floating (open pickup)
+                  </div>
+                  <div class="pill-option" onclick="selectMode('self',this)" data-mode="self">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    To Myself
+                  </div>
+                </div>
+                <p class="form-hint mt-8" id="mode-hint">Task is directly assigned to one or more employees</p>
+              </div>
+
+              <!-- Assignee selector -->
+              <div id="assignee-section" class="form-group" style="margin:0">
+                <label class="form-label form-label-required" style="margin-bottom:10px">Assign To</label>
+                <div style="border:1px solid var(--clr-border);border-radius:var(--r-md);overflow:hidden">
+                  <div style="padding:10px 14px;background:var(--clr-surface-2);border-bottom:1px solid var(--clr-border)">
+                    <input id="employee-search-input" class="form-input" type="text" placeholder="Search employees…" style="border:none;background:transparent;padding:0;font-size:0.875rem" oninput="filterEmployeeList(this.value)" />
+                  </div>
+                  <div id="employee-list" style="padding:8px;display:flex;flex-direction:column;gap:2px;max-height:220px;overflow-y:auto"></div>
+                </div>
+                <p class="form-hint mt-6">Selected: <span id="selected-count">0</span> employee(s)</p>
+              </div>
+
+              <!-- Dates & Times -->
+              <div class="form-row" id="date-row-start" style="gap:16px">
+                <div class="form-group" style="margin:0">
+                  <label class="form-label form-label-required" id="tc-start-label" style="margin-bottom:8px">Planned Start Date</label>
+                  <input class="form-input" type="date" id="tc-start" />
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label" style="margin-bottom:8px">Start Time</label>
+                  <input class="form-input" type="time" id="tc-start-time" />
+                </div>
+              </div>
+              <div class="form-row" style="gap:16px">
+                <div class="form-group" id="due-date-group" style="margin:0">
+                  <label class="form-label form-label-required" style="margin-bottom:8px">Due Date</label>
+                  <input class="form-input" type="date" id="tc-due" />
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label" style="margin-bottom:8px">End Time</label>
+                  <input class="form-input" type="time" id="tc-end-time" />
+                </div>
+              </div>
+
+              <!-- Employee-only: optional due date -->
+              <div id="emp-duedate-section" class="hidden">
+                <div class="form-group" style="margin:0 0 16px">
+                  <label class="form-label" style="margin-bottom:10px">Does this task have a due date?</label>
+                  <div class="pill-select" id="emp-duedate-toggle">
+                    <div class="pill-option selected" onclick="toggleEmpDueDate(false, this)">No</div>
+                    <div class="pill-option" onclick="toggleEmpDueDate(true, this)">Yes</div>
+                  </div>
+                </div>
+                <div class="form-row hidden" id="emp-duedate-input-group" style="gap:16px">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label form-label-required" style="margin-bottom:8px">Due Date</label>
+                    <input class="form-input" type="date" id="tc-emp-due" />
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label" style="margin-bottom:8px">Due Time</label>
+                    <input class="form-input" type="time" id="tc-emp-due-time" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex justify-between" style="padding-top:4px">
+                <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+                <button class="btn btn-primary" id="step2-next-btn" onclick="goStep(3)">Next: Notifications →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Notifications -->
+          <div id="create-panel-3" class="card hidden">
+            <div class="section-title mb-16" id="step3-title">Notification Schedule</div>
+            <div class="d-flex flex-col gap-16">
+
+              <!-- Employee reminder (shown instead of full notification UI) -->
+              <div id="emp-reminder-panel" class="hidden" style="flex-direction:column;gap:20px">
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">Remind me before the due date</label>
+                  <p class="form-hint" style="margin-bottom:10px">We'll send you a notification so you don't miss the deadline.</p>
+                  <select class="form-input" id="emp-reminder-select" onchange="applyPresetReminder(this.value);this.value=''">
+                    <option value="" selected>Select a suitable reminder</option>
+                    <option value="1d">1 day before due</option>
+                    <option value="3d">3 days before due</option>
+                    <option value="1w">1 week before due</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">Notify me via</label>
+                  <div class="d-flex gap-16" style="flex-wrap:wrap;margin-top:8px">
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8125rem;font-weight:500;color:var(--clr-text-2)">
+                      <input type="checkbox" id="emp-notif-inapp" checked style="accent-color:var(--clr-primary)" /> In-App
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8125rem;font-weight:500;color:var(--clr-text-2)">
+                      <input type="checkbox" id="emp-notif-email" checked style="accent-color:var(--clr-primary)" /> Email
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8125rem;font-weight:500;color:var(--clr-text-2)">
+                      <input type="checkbox" id="emp-notif-sms" style="accent-color:var(--clr-primary)" /> SMS
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Custom reminders -->
+                <div style="margin:0">
+                  <div class="d-flex items-center justify-between" style="margin-bottom:12px">
+                    <div>
+                      <div class="form-label" style="margin:0">Custom Reminders</div>
+                      <div class="form-hint" style="margin-top:2px">Set a specific date and time to be reminded</div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="addCustomReminder()">+ Add reminder</button>
+                  </div>
+                  <div id="emp-custom-reminders-list" style="display:flex;flex-direction:column;gap:8px"></div>
+                  <div id="emp-active-reminders-summary" class="hidden" style="margin-top:12px;padding:12px 14px;background:var(--clr-primary-surface);border:1px solid var(--clr-primary-border,var(--c-blue-100));border-radius:var(--r-md)">
+                    <div class="d-flex items-center gap-6" style="margin-bottom:8px">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--clr-primary)" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+                      <span style="font-size:0.75rem;font-weight:600;color:var(--clr-primary)">Active reminders</span>
+                    </div>
+                    <ul id="emp-active-reminders-items" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px"></ul>
+                  </div>
+                </div>
+
+                <div class="d-flex justify-between" style="padding-top:4px;border-top:1px solid var(--clr-border)">
+                  <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+                  <button class="btn btn-primary" onclick="submitTask()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Log Work
+                  </button>
+                </div>
+              </div>
+
+              <!-- Non-employee full notification UI -->
+              <div id="supervisor-notif-panel" style="display:flex;flex-direction:column;gap:12px">
+
+                <!-- Send timing — hidden when "To Myself" mode is selected -->
+                <div style="background:var(--clr-surface-2);border:1px solid var(--clr-border);border-radius:var(--r-lg);padding:16px 18px">
+                  <div id="assignment-notif-block">
+                    <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--clr-text-3);margin-bottom:12px">Assignment Notification</div>
+                    <div class="pill-select" id="tc-notif-when" style="margin-bottom:12px">
+                      <div class="pill-option selected" onclick="selectNotifTiming('now',this)">Send Now</div>
+                      <div class="pill-option" onclick="selectNotifTiming('scheduled',this)">Schedule for Later</div>
+                    </div>
+                    <div id="schedule-datetime" class="form-row hidden" style="margin:0 0 12px">
+                      <div class="form-group" style="margin:0">
+                        <label class="form-label">Date</label>
+                        <input class="form-input" type="date" id="notif-sched-date" />
+                      </div>
+                      <div class="form-group" style="margin:0">
+                        <label class="form-label">Time</label>
+                        <input class="form-input" type="time" id="notif-sched-time" />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-size:0.75rem;font-weight:600;color:var(--clr-text-2);margin-bottom:8px">Channels</div>
+                    <div class="d-flex gap-16" style="flex-wrap:wrap">
+                      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8125rem;font-weight:500;color:var(--clr-text-2)">
+                        <input type="checkbox" checked style="accent-color:var(--clr-primary)" /> In-App
+                      </label>
+                      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8125rem;font-weight:500;color:var(--clr-text-2)">
+                        <input type="checkbox" checked style="accent-color:var(--clr-primary)" /> Email
+                      </label>
+                      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8125rem;font-weight:500;color:var(--clr-text-2)">
+                        <input type="checkbox" style="accent-color:var(--clr-primary)" /> SMS
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Deadline reminder -->
+                <div style="background:var(--clr-surface-2);border:1px solid var(--clr-border);border-radius:var(--r-lg);padding:16px 18px">
+                  <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--clr-text-3);margin-bottom:12px">Deadline Reminder</div>
+                  <select id="sv-deadline-reminder" class="form-input" style="margin:0">
+                    <option value="">No reminder</option>
+                    <option value="1">1 day before due</option>
+                    <option value="3" selected>3 days before due</option>
+                    <option value="7">1 week before due</option>
+                  </select>
+                </div>
+
+
+<div class="d-flex justify-between" style="padding-top:4px">
+                  <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+                  <button class="btn btn-primary" onclick="submitTask()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Publish Task
+                  </button>
+                </div>
+              </div><!-- end supervisor-notif-panel -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── TASK DETAIL ─────────────────────────── -->
+      <div class="page hidden" id="page-task-detail">
+        <div class="d-flex items-center gap-8 mb-20">
+          <button class="btn btn-ghost btn-sm" onclick="navigate('tasks')" style="padding:5px 8px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          </button>
+          <span class="text-muted text-xs">Tasks</span>
+          <span class="text-muted text-xs">›</span>
+          <span id="detail-breadcrumb" class="text-xs font-semibold text-secondary"></span>
+        </div>
+
+        <div class="task-detail-layout" id="task-detail-layout"></div>
+      </div>
+
+      <!-- ─── CALENDAR ─────────────────────────────── -->
+      <div class="page hidden" id="page-calendar">
+
+        <!-- Calendar header -->
+        <div class="cal-header">
+          <div class="cal-header-left">
+            <button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <h2 class="cal-month-title" id="cal-month-label"></h2>
+            <button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="goToday()" id="cal-today-btn">Today</button>
+          </div>
+          <div class="cal-legend">
+            <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--c-blue-500)"></span>In Progress</span>
+            <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--c-cyan-500)"></span>Upcoming</span>
+            <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--c-amber-500)"></span>Review</span>
+            <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--c-green-500)"></span>Completed</span>
+            <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--c-red-500)"></span>Overdue</span>
+          </div>
+        </div>
+
+        <!-- Calendar body + sidebar -->
+        <div class="cal-layout">
+          <div class="cal-main card" style="padding:0;overflow:hidden;flex:1;min-width:0">
+            <div id="cal-grid"></div>
+          </div>
+          <div class="cal-sidebar card" id="cal-sidebar">
+            <div class="section-title text-xs mb-12">THIS MONTH</div>
+            <div id="cal-summary"></div>
+            <div class="divider"></div>
+            <div class="section-title text-xs mb-12">UPCOMING</div>
+            <div id="cal-upcoming"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── NOTIFICATIONS ─────────────────────────── -->
+      <div class="page hidden" id="page-notifications">
+        <div class="d-flex items-center justify-between mb-16">
+          <div class="d-flex gap-4">
+            <button class="btn btn-sm" id="notif-filter-all" onclick="filterNotifs('all',this)" style="background:var(--clr-primary);color:#fff">All</button>
+            <button class="btn btn-secondary btn-sm" onclick="filterNotifs('unread',this)">Unread</button>
+            <button class="btn btn-secondary btn-sm" onclick="filterNotifs('task',this)">Task Updates</button>
+            <button class="btn btn-secondary btn-sm" onclick="filterNotifs('reminder',this)">Reminders</button>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
+        </div>
+        <div class="card" id="notif-list"></div>
+      </div>
+
+      <!-- ─── ORG CHART ─────────────────────────────── -->
+      <div class="page hidden" id="page-org-chart">
+        <div class="d-flex items-center justify-between mb-20">
+          <div>
+            <h2 style="font-family:var(--font-display);font-size:1.125rem;font-weight:700;color:var(--clr-text)">Team Hierarchy</h2>
+            <p class="text-xs text-muted mt-4">QHSE Department · All members</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openAddUserModal()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Member
+          </button>
+        </div>
+        <div id="org-chart-container"></div>
+
+        <div class="d-flex gap-16" style="flex-wrap:wrap;margin-top:32px">
+          <div class="card" style="flex:1;min-width:240px" id="task-categories-card">
+            <div class="card-header"><div class="card-title">Task Categories</div><button class="btn btn-primary btn-sm" onclick="openAddCategoryModal()">+ Add</button></div>
+            <div class="d-flex flex-col gap-8" id="task-categories-list">
+              <div style="color:var(--clr-text-3);font-size:0.8rem;padding:8px 0">Loading…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── ADMIN: MANAGE USERS ──────────────────── -->
+      <div class="page hidden" id="page-admin-users">
+        <div id="admin-users-container"></div>
+      </div>
+
+      <!-- ─── KPIs ──────────────────────────────────── -->
+      <div class="page hidden" id="page-kpis">
+        <div id="kpi-page-content"></div>
+      </div>
+
+
+
+      <!-- ─── REPORTS ─────────────────────────────── -->
+      <div class="page hidden" id="page-reports">
+        <div id="reports-content"></div>
+      </div>
+
+      <!-- ─── OPERATIONAL (HOD only) ───────────────── -->
+      <div class="page hidden" id="page-operational">
+        <div id="operational-content"></div>
+      </div>
+
+      <!-- ─── TO-DO LIST (Employee) ────────────────── -->
+      <div class="page hidden" id="page-todo">
+        <div id="todo-content"></div>
+      </div>
+
+    </main><!-- /page-content -->
+
+  </div><!-- /main-area -->
+</div><!-- /view-app -->
+
+<!-- ═══════════════════════════════════════════════════════
+     MODALS
+═══════════════════════════════════════════════════════ -->
+<!-- Reject Task Modal -->
+<div class="modal-overlay" id="modal-reject" onclick="if(event.target===this)closeModal('modal-reject')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Reject Task</div>
+      <button class="modal-close" onclick="closeModal('modal-reject')">✕</button>
+    </div>
+    <div class="d-flex flex-col gap-14">
+      <div class="form-group">
+        <label class="form-label form-label-required">Reason for Rejection</label>
+        <textarea class="form-input" rows="3" placeholder="Explain why you cannot accept this task…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Request Replacement?</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.875rem">
+          <input type="checkbox" style="accent-color:var(--clr-primary)" />
+          Yes — notify supervisor to reassign this task
+        </label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-reject')">Cancel</button>
+      <button class="btn btn-danger" onclick="closeModal('modal-reject');showToast('Task rejected. Supervisor notified.','error')">Confirm Rejection</button>
+    </div>
+  </div>
+</div>
+
+<!-- Submit Work Modal -->
+<div class="modal-overlay" id="modal-submit" onclick="if(event.target===this)closeModal('modal-submit')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Submit Completed Work</div>
+      <button class="modal-close" onclick="closeModal('modal-submit')">✕</button>
+    </div>
+    <div class="d-flex flex-col gap-14">
+      <div class="form-group">
+        <label class="form-label form-label-required">Completion Remarks</label>
+        <textarea class="form-input" rows="3" placeholder="Summarise what was done, any blockers encountered…" id="submit-remarks"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Actual Start Time</label>
+          <input class="form-input" type="time" id="submit-start-time" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Actual End Time</label>
+          <input class="form-input" type="time" id="submit-end-time" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Total Time Spent <span style="font-size:0.72rem;color:var(--clr-text-3)">(auto-calculated)</span></label>
+          <div class="d-flex gap-8"><input class="form-input" type="number" min="0" step="0.5" placeholder="0" id="submit-hours" style="width:70px;flex-shrink:0" /><select class="form-input" id="submit-time-unit"><option value="h">Hours</option><option value="d">Days</option></select></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Completion Date</label>
+          <input class="form-input" type="date" id="submit-completion-date" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Attach Supporting Files</label>
+        <div style="border:1.5px dashed var(--clr-border-md);border-radius:var(--r-md);padding:14px;text-align:center;cursor:pointer"><p class="text-sm text-secondary">Click to attach files</p></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-submit')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitWorkForReview()">Submit for Review</button>
+    </div>
+  </div>
+</div>
+
+<!-- Approve/Reject Submission Modal -->
+<div class="modal-overlay" id="modal-review" onclick="if(event.target===this)closeModal('modal-review')">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title">Review Submission</div>
+      <button class="modal-close" onclick="closeModal('modal-review')">✕</button>
+    </div>
+
+    <!-- Submission details -->
+    <div id="review-submission-details" style="background:var(--clr-surface-2);border:1px solid var(--clr-border);border-radius:var(--r-md);padding:14px;margin-bottom:16px">
+      <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--clr-text-3);margin-bottom:8px">Submission Details</div>
+      <div id="review-task-title" style="font-weight:700;font-size:1rem;margin-bottom:6px"></div>
+      <div id="review-submitted-by" class="text-xs text-muted mb-6"></div>
+      <div id="review-remarks" class="text-sm" style="margin-top:8px"></div>
+    </div>
+
+    <!-- Decision -->
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Decision</label>
+      <div class="d-flex gap-10">
+        <label style="display:flex;align-items:center;gap-8px;cursor:pointer;flex:1;padding:10px 14px;border:2px solid var(--clr-border);border-radius:var(--r-md);transition:border-color .15s" id="review-opt-approve">
+          <input type="radio" name="review-decision" value="Approved" style="accent-color:var(--c-green-500)" onchange="reviewDecisionChanged(this)">
+          <span style="margin-left:8px;font-weight:600;color:var(--c-green-600)">✓ Approve</span>
+        </label>
+        <label style="display:flex;align-items:center;gap-8px;cursor:pointer;flex:1;padding:10px 14px;border:2px solid var(--clr-border);border-radius:var(--r-md);transition:border-color .15s" id="review-opt-revision">
+          <input type="radio" name="review-decision" value="Revision" style="accent-color:var(--c-amber-500)" onchange="reviewDecisionChanged(this)">
+          <span style="margin-left:8px;font-weight:600;color:var(--c-amber-600)">↩ Request Revision</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group" id="review-reason-group" style="display:none">
+      <label class="form-label">Reason for revision <span style="color:var(--c-red-500)">*</span></label>
+      <textarea id="review-reason" class="form-input" rows="3" placeholder="Explain what needs to be changed…"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-review')">Cancel</button>
+      <button class="btn btn-primary" id="review-submit-btn" onclick="submitReview()">Submit Decision</button>
+    </div>
+  </div>
+</div>
+
+<!-- KPI Create Modal -->
+<div class="modal-overlay" id="modal-kpi-create" onclick="if(event.target===this)closeModal('modal-kpi-create')">
+  <div class="modal" style="max-width:520px;width:100%">
+    <div class="modal-header">
+      <div class="modal-title">Create KPI</div>
+      <button class="modal-close" onclick="closeModal('modal-kpi-create')">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label">KPI Title <span style="color:var(--c-red-500)">*</span></label>
+        <input class="form-input" id="kpi-title" placeholder="e.g. Monthly Sales Target" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="kpi-description" rows="2" placeholder="What this KPI measures..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Metric / Measure</label>
+          <input class="form-input" id="kpi-metric" placeholder="e.g. Revenue, Calls, Tasks" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unit</label>
+          <select class="form-input" id="kpi-unit">
+            <option value="count">Count</option>
+            <option value="%">Percentage (%)</option>
+            <option value="hrs">Hours</option>
+            <option value="LKR">LKR</option>
+            <option value="USD">USD</option>
+            <option value="tasks">Tasks</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Target Value <span style="color:var(--c-red-500)">*</span></label>
+          <input class="form-input" id="kpi-target" type="number" min="0" placeholder="e.g. 100" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Period</label>
+          <select class="form-input" id="kpi-period">
+            <option value="weekly">Weekly</option>
+            <option value="monthly" selected>Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="annually">Annually</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Start Date</label>
+          <input class="form-input" id="kpi-start" type="date" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Date</label>
+          <input class="form-input" id="kpi-end" type="date" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assign To <span style="color:var(--c-red-500)">*</span></label>
+        <div id="kpi-assignee-list" style="display:flex;flex-direction:column;gap:6px;max-height:140px;overflow-y:auto;padding:4px 0"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-kpi-create')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitCreateKpi()">Create KPI</button>
+    </div>
+  </div>
+</div>
+
+<!-- KPI Log Progress Modal -->
+<div class="modal-overlay" id="modal-kpi-progress" onclick="if(event.target===this)closeModal('modal-kpi-progress')">
+  <div class="modal" style="max-width:420px;width:100%">
+    <div class="modal-header">
+      <div class="modal-title">Log Progress</div>
+      <button class="modal-close" onclick="closeModal('modal-kpi-progress')">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+      <div id="kpi-progress-kpi-title" style="font-weight:600;font-size:0.95rem;color:var(--clr-text)"></div>
+      <div id="kpi-progress-meta" style="font-size:0.8rem;color:var(--clr-text-2)"></div>
+      <div class="form-group">
+        <label class="form-label">Value to Add <span style="color:var(--c-red-500)">*</span></label>
+        <input class="form-input" id="kpi-progress-value" type="number" min="0" step="any" placeholder="Enter amount" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <textarea class="form-input" id="kpi-progress-notes" rows="2" placeholder="Any context or remarks..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-kpi-progress')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitKpiProgress()">Log Progress</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit Member Modal (global — used from Org Chart and Manage Users) -->
+<div class="modal-overlay" id="modal-user-form" onclick="if(event.target===this)closeUserModal()">
+  <div class="modal" style="max-width:500px;width:100%">
+    <div class="modal-header">
+      <div class="modal-title" id="user-modal-title">Add Member</div>
+      <button class="modal-close" onclick="closeUserModal()">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+      <input type="hidden" id="uf-userid" />
+      <div class="form-group">
+        <label class="form-label">Full Name *</label>
+        <input class="form-input" id="uf-name" placeholder="e.g. Kaveesha Gayathri" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email *</label>
+        <input class="form-input" id="uf-email" type="email" placeholder="user@hayleys.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password <span id="uf-pass-hint" style="font-weight:400;color:var(--clr-text-3)">(required)</span></label>
+        <div style="position:relative">
+          <input class="form-input" id="uf-password" type="password" placeholder="Minimum 6 characters" style="padding-right:40px" />
+          <button type="button" onclick="const i=document.getElementById('uf-password');const b=this;i.type=i.type==='password'?'text':'password';b.innerHTML=i.type==='password'?'<svg width=\'15\' height=\'15\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/></svg>':'<svg width=\'15\' height=\'15\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24\'/><line x1=\'1\' y1=\'1\' x2=\'23\' y2=\'23\'/></svg>'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--clr-text-3);display:flex;align-items:center;padding:2px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Role *</label>
+          <select class="form-input" id="uf-role" onchange="onUserRoleChange()">
+            <option value="">Select role</option>
+            <option value="Employee">Employee</option>
+            <option value="Supervisor">Supervisor</option>
+            <option value="HOD">HOD</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Division</label>
+          <input class="form-input" id="uf-division" placeholder="e.g. QHSE" />
+        </div>
+      </div>
+      <div class="form-group" id="uf-reportsto-group" style="display:none">
+        <label class="form-label" id="uf-reportsto-label">Reports To *</label>
+        <select class="form-input" id="uf-reportsto">
+          <option value="">Select supervisor</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Designation</label>
+        <input class="form-input" id="uf-designation" placeholder="e.g. Officer - Compliance & ESG" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input class="form-input" id="uf-phone" placeholder="+94 77 000 0000" />
+      </div>
+      <div id="uf-error" style="display:none;color:var(--clr-danger);font-size:0.8125rem;padding:8px 12px;background:var(--c-red-50);border-radius:var(--r-md)"></div>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeUserModal()">Cancel</button>
+      <button class="btn btn-primary" id="uf-submit-btn" onclick="submitUserForm()">Add Member</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:none;transform:translateY(8px);transition:all 0.25s ease">
+  <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:var(--r-md);background:var(--clr-text);color:#fff;font-size:0.8125rem;font-weight:500;box-shadow:var(--shadow-xl);min-width:240px" id="toast-inner">
+    <span id="toast-icon"></span><span id="toast-msg"></span>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
