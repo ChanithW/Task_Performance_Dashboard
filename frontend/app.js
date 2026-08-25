@@ -1455,7 +1455,7 @@ function renderTaskDetail() {
       ${t.actualHours ? `<div class="task-info-row"><div class="task-info-key">Actual Time</div><div class="task-info-val tabular-nums" style="color:var(--c-green-600)">${t.actualHours}h</div></div>` : ''}
       <div class="task-info-row" style="border-bottom:none"><div class="task-info-key">Assignees</div><div class="d-flex flex-col gap-4">${assigneeHtml}</div></div>
 
-      ${(t.createdByName && t.createdByName !== USERS.employee.name) ? `<div class="divider"></div>
+      ${(t.createdByName && t.createdByName !== USERS.employee.name && t.mode !== 'self') ? `<div class="divider"></div>
       <div class="section-title text-xs mb-12">SUPERVISOR</div>
       <div class="d-flex items-center gap-8">
         ${avatar(t.createdByName.split(' ').map(function(w){return w[0];}).join('').substring(0,2),'#7c3aed','sm')}
