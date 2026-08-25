@@ -59,7 +59,7 @@ function normalizeTask(t) {
     estimatedUnit:  t.estimatedtimeunit || 'h',
     assignees:    Array.isArray(t.assignees) && t.assignees.length
                     ? t.assignees.map(a => a.userid ?? a)
-                    : [state.userId || USERS.employee.id],
+                    : [],
     _assigneeNames: Array.isArray(t.assignees) && t.assignees.length
                     ? Object.fromEntries(t.assignees.map(a => [a.userid ?? a, a.name ?? '']))
                     : {},
@@ -120,8 +120,8 @@ function normalizeNotification(n) {
     unread: !n.isread,
     time:   n.sentat ? new Date(n.sentat).toLocaleString() : (n.scheduledat ? new Date(n.scheduledat).toLocaleString() : ''),
     icon:   'task-assigned',
-    bg:     '#eff6ff',
-    color:  '#2563eb',
+    bg:     '#EAF0F8',
+    color:  '#1A3057',
     _apiId: n.notificationid,
   };
 }
@@ -189,9 +189,11 @@ const employeeApi = {
 // Populated by loadEmployeePageData(); consumed by render functions.
 const apiCache = {
   dashboard:        null,   // raw /employee/dashboard response
-  tasks:            [],     // normalized tasks
+  tasks:            [],     // normalized tasks (own / assigned)
+  orgTasks:         [],     // HOD only: all org tasks for chat access
   notifications:    [],     // normalized notifications
   employeeProgress: [],     // from /supervisor/progress
+  achievements:     [],     // from /achievements
 };
 
 // ── Page data loader ─────────────────────────────────────────

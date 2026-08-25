@@ -50,14 +50,22 @@ router.post('/:taskId/submit', async (req, res) => {
       );
     }
 
-    // Completed submission → awaiting supervisor review (Submitted)
-    // UnableToComplete → stays as-is for supervisor to review
-    // InProgress → partial update, stays InProgress
-    const newTaskStatus = {
-      Completed:        'Submitted',
-      UnableToComplete: 'Submitted',
-      InProgress:       'InProgress',
-    }[status];
+    // Determine new task status after submission.
+    // If the task is currently Overdue, it stays Overdue regardless of submission
+    // so the supervisor can see it was completed late.
+    const currentRow = await client.query(`SELECT status FROM TASK WHERE taskid = $1`, [taskId]);
+    const currentStatus = currentRow.rows[0]?.status;
+
+    let newTaskStatus;
+    if (currentStatus === 'Overdue') {
+      newTaskStatus = 'Overdue'; // stays overdue — late submission recorded but status unchanged
+    } else {
+      newTaskStatus = {
+        Completed:        'Submitted',
+        UnableToComplete: 'Submitted',
+        InProgress:       'InProgress',
+      }[status];
+    }
 
     await client.query(`UPDATE TASK SET status = $1 WHERE taskid = $2`, [newTaskStatus, taskId]);
 

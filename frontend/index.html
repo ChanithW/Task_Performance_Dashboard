@@ -102,6 +102,16 @@
 
       <!-- ─── TASKS LIST ─────────────────────────── -->
       <div class="page hidden" id="page-tasks">
+
+        <!-- HOD task-scope tab (hidden for non-HOD roles) -->
+        <div id="hod-task-scope-bar" style="display:none;margin-bottom:16px;border-bottom:2px solid var(--clr-border)">
+          <button class="hod-scope-tab active" id="hod-scope-mine" onclick="setHodTaskScope('mine',this)">My Tasks</button>
+          <button class="hod-scope-tab" id="hod-scope-org" onclick="setHodTaskScope('org',this)">
+            Org Tasks
+            <span style="font-size:0.68rem;background:var(--hayleys-gold-surf);color:var(--hayleys-gold);border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:600">Chat Access</span>
+          </button>
+        </div>
+
         <!-- Toolbar -->
         <div class="d-flex items-center justify-between gap-12 mb-20">
           <div class="d-flex gap-8 items-center">
@@ -551,7 +561,7 @@
                     <button class="btn btn-secondary btn-sm" onclick="addCustomReminder()">+ Add reminder</button>
                   </div>
                   <div id="emp-custom-reminders-list" style="display:flex;flex-direction:column;gap:8px"></div>
-                  <div id="emp-active-reminders-summary" class="hidden" style="margin-top:12px;padding:12px 14px;background:var(--clr-primary-surface);border:1px solid var(--clr-primary-border,var(--c-blue-100));border-radius:var(--r-md)">
+                  <div id="emp-active-reminders-summary" class="hidden" style="margin-top:12px;padding:12px 14px;background:var(--clr-primary-surface);border:1px solid var(--clr-border);border-radius:var(--r-md)">
                     <div class="d-flex items-center gap-6" style="margin-bottom:8px">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--clr-primary)" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
                       <span style="font-size:0.75rem;font-weight:600;color:var(--clr-primary)">Active reminders</span>
@@ -1037,6 +1047,68 @@
 <div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:none;transform:translateY(8px);transition:all 0.25s ease">
   <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:var(--r-md);background:var(--clr-text);color:#fff;font-size:0.8125rem;font-weight:500;box-shadow:var(--shadow-xl);min-width:240px" id="toast-inner">
     <span id="toast-icon"></span><span id="toast-msg"></span>
+  </div>
+</div>
+
+<!-- Award Achievement Modal -->
+<div class="modal-overlay" id="modal-award-achievement" onclick="if(event.target===this)closeModal('modal-award-achievement')">
+  <div class="modal" style="max-width:480px;width:100%">
+    <div class="modal-header">
+      <div class="modal-title">Award Achievement</div>
+      <button class="modal-close" onclick="closeModal('modal-award-achievement')">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label">Employee *</label>
+        <select class="form-input" id="ach-userid">
+          <option value="">Select employee…</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Achievement Title *</label>
+        <input class="form-input" id="ach-title" placeholder="e.g. Outstanding Safety Contribution" maxlength="200" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description <span style="font-weight:400;color:var(--clr-text-3)">(optional)</span></label>
+        <textarea class="form-input" id="ach-description" rows="3" placeholder="Brief note about why this achievement was awarded…" maxlength="500" style="resize:vertical"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Badge</label>
+        <div class="badge-selector" id="ach-badge-selector">
+          <div class="badge-option selected badge-star"    data-badge="star"   onclick="selectBadge(this)">⭐</div>
+          <div class="badge-option badge-trophy"           data-badge="trophy" onclick="selectBadge(this)">🏆</div>
+          <div class="badge-option badge-medal"            data-badge="medal"  onclick="selectBadge(this)">🥇</div>
+          <div class="badge-option badge-rocket"           data-badge="rocket" onclick="selectBadge(this)">🚀</div>
+          <div class="badge-option badge-shield"           data-badge="shield" onclick="selectBadge(this)">🛡️</div>
+          <div class="badge-option badge-fire"             data-badge="fire"   onclick="selectBadge(this)">🔥</div>
+          <div class="badge-option badge-heart"            data-badge="heart"  onclick="selectBadge(this)">❤️</div>
+          <div class="badge-option badge-crown"            data-badge="crown"  onclick="selectBadge(this)">👑</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-award-achievement')">Cancel</button>
+      <button class="btn btn-primary" id="ach-submit-btn" onclick="submitAchievement()">Award Achievement</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Chat Participant Modal (HOD only) -->
+<div class="modal-overlay" id="modal-add-chat-participant" onclick="if(event.target===this)closeModal('modal-add-chat-participant')">
+  <div class="modal" style="max-width:440px;width:100%">
+    <div class="modal-header">
+      <div class="modal-title">Add Participant to Chat</div>
+      <button class="modal-close" onclick="closeModal('modal-add-chat-participant')">✕</button>
+    </div>
+    <div class="modal-body" style="padding-bottom:0">
+      <input type="hidden" id="add-participant-task-id" />
+      <input type="text" class="form-control" placeholder="Search by name…" style="margin-bottom:12px"
+        oninput="filterParticipantList(this.value)" />
+      <div id="add-participant-user-list" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-chat-participant')">Done</button>
+    </div>
   </div>
 </div>
 

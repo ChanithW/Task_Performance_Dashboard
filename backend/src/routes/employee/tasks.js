@@ -45,7 +45,13 @@ router.get('/', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT ${TASK_COLUMNS},
               u.name AS createdbyname,
-              a.assignmentid, a.acceptancestatus, a.plannedstartdate, a.notifyat, a.assignedat
+              a.assignmentid, a.acceptancestatus, a.plannedstartdate, a.notifyat, a.assignedat,
+              COALESCE(
+                (SELECT json_agg(json_build_object('userid', au.userid, 'name', au.name) ORDER BY au.name)
+                 FROM TASK_ASSIGNMENT aa JOIN "USER" au ON au.userid = aa.assignedto
+                 WHERE aa.taskid = t.taskid AND aa.acceptancestatus != 'Rejected'),
+                '[]'
+              ) AS assignees
        FROM TASK t
        JOIN TASK_ASSIGNMENT a ON a.taskid = t.taskid AND a.assignedto = $1 AND a.acceptancestatus != 'Rejected'
        JOIN "USER" u           ON u.userid = t.createdby
@@ -71,7 +77,13 @@ router.get('/:taskId', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT ${TASK_COLUMNS},
               u.name AS createdbyname,
-              a.assignmentid, a.acceptancestatus, a.plannedstartdate, a.notifyat, a.assignedat
+              a.assignmentid, a.acceptancestatus, a.plannedstartdate, a.notifyat, a.assignedat,
+              COALESCE(
+                (SELECT json_agg(json_build_object('userid', au.userid, 'name', au.name) ORDER BY au.name)
+                 FROM TASK_ASSIGNMENT aa JOIN "USER" au ON au.userid = aa.assignedto
+                 WHERE aa.taskid = t.taskid AND aa.acceptancestatus != 'Rejected'),
+                '[]'
+              ) AS assignees
        FROM TASK t
        JOIN TASK_ASSIGNMENT a ON a.taskid = t.taskid AND a.assignedto = $1
        JOIN "USER" u           ON u.userid = t.createdby

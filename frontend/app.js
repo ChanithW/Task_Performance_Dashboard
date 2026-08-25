@@ -343,6 +343,7 @@ function iconPath(name) {
     users:    `<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>`,
     kpi:          `<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><polyline points="1 20 23 20"/>`,
     check:        `<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>`,
+    star:         `<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>`,
   };
   return p[name] || '';
 }
@@ -405,9 +406,13 @@ async function navigate(page) {
 
   if (page === 'dashboard') {
     renderDashboard();
-    loadProgressSection(); // non-blocking: patches #emp-progress-section after render
+    loadProgressSection();   // non-blocking: patches #emp-progress-section after render
+    loadAchievementFeed();   // non-blocking: patches #achievement-feed-section after render
   }
-  if (page === 'tasks')         renderTasksPage();
+  if (page === 'tasks') {
+    _hodTaskScope = 'mine'; // always start on My Tasks tab
+    renderTasksPage();
+  }
   if (page === 'task-create')   initTaskCreate();
   if (page === 'calendar') {
     if (state.role === 'employee' && !_todoCache.length) {
@@ -480,6 +485,7 @@ function renderHODDash() {
       <p class="text-muted text-xs mt-4">Here's the QHSE department overview for today</p>
     </div>
     <div class="d-flex gap-8">
+      <button class="btn btn-secondary btn-sm" onclick="openAwardAchievementModal()">${icon('star',14)} Award Achievement</button>
       <button class="btn btn-primary btn-sm" onclick="navigate('task-create')">${icon('plus', 14)} Create Task</button>
     </div>
   </div>
@@ -550,7 +556,9 @@ function renderHODDash() {
         </tbody>
       </table>
     </div>
-  </div>`;
+  </div>
+
+  <div id="achievement-feed-section" style="margin-top:16px"></div>`;
 }
 
 // ── Supervisor Dashboard ───────────────────────────────────
@@ -648,7 +656,10 @@ function renderSupervisorDash() {
       <h2 style="font-family:var(--font-display);font-size:1.25rem;font-weight:800;color:var(--clr-text)">Good morning, ${firstName} 👋</h2>
       <p class="text-muted text-xs mt-4">You have ${pendingApproval.length} submission${pendingApproval.length !== 1 ? 's' : ''} awaiting your review · ${team.length} people in your team</p>
     </div>
-    <button class="btn btn-primary" onclick="navigate('task-create')">${icon('plus',14)} Create Task</button>
+    <div class="d-flex gap-8">
+      <button class="btn btn-secondary btn-sm" onclick="openAwardAchievementModal()">${icon('star',14)} Award Achievement</button>
+      <button class="btn btn-primary" onclick="navigate('task-create')">${icon('plus',14)} Create Task</button>
+    </div>
   </div>
 
   <!-- KPIs -->
@@ -659,6 +670,26 @@ function renderSupervisorDash() {
     <div class="stat-card"><div class="stat-icon" style="background:var(--c-cyan-50);color:var(--c-cyan-600)">${icon('clock',20)}</div><div><div class="stat-value tabular-nums">${stats.inProgress}</div><div class="stat-label">In Progress</div></div></div>
     <div class="stat-card"><div class="stat-icon" style="background:var(--c-green-50);color:var(--c-green-600)">${icon('check',20)}</div><div><div class="stat-value tabular-nums">${stats.completed}</div><div class="stat-label">Completed</div></div></div>
   </div>
+
+  ${pendingApproval.length ? `
+  <div class="card mb-20" style="border:2px solid var(--c-amber-400);background:linear-gradient(135deg,var(--c-amber-50) 0%,var(--clr-surface) 60%);box-shadow:0 4px 20px rgba(245,158,11,0.15)">
+    <div class="section-header mb-12">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--c-amber-400);border-radius:50%;animation:pulse-amber 2s infinite">${icon('eye',14)}</span>
+        <div class="section-title" style="color:var(--c-amber-700)">Pending Approval</div>
+      </div>
+      <span class="badge" style="background:var(--c-amber-400);color:#fff;font-weight:700">${pendingApproval.length} awaiting review</span>
+    </div>
+    ${pendingApproval.map(t => `
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--clr-surface);border:1px solid var(--c-amber-300);border-left:4px solid var(--c-amber-400);border-radius:var(--r-md);margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        ${priBadge((t.priority||'medium').toLowerCase())}
+        <div style="flex:1;min-width:0">
+          <div class="text-sm font-semibold truncate">${t.title}</div>
+          <div class="text-xs text-muted mt-2">Submitted by <strong>${t.employeename}</strong> · ${t.categoryname || t.taskcategory}</div>
+        </div>
+        <button class="btn btn-primary btn-sm" style="background:var(--c-amber-500);border-color:var(--c-amber-500);font-weight:600" onclick="openReviewModal(${t.taskid}, '${(t.title||'').replace(/'/g,'')}')">Review</button>
+      </div>`).join('')}
+  </div>` : ''}
 
   <div class="d-flex gap-16 mb-20" style="flex-wrap:wrap">
     <div class="card" style="flex:2;min-width:280px">
@@ -697,27 +728,10 @@ function renderSupervisorDash() {
     </div>
   </div>
 
-  ${pendingApproval.length ? `
-  <div class="card mb-16" style="border:2px solid var(--c-amber-400);background:linear-gradient(135deg,var(--c-amber-50) 0%,var(--clr-surface) 60%);box-shadow:0 4px 20px rgba(245,158,11,0.15)">
-    <div class="section-header mb-12">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--c-amber-400);border-radius:50%;animation:pulse-amber 2s infinite">${icon('eye',14)}</span>
-        <div class="section-title" style="color:var(--c-amber-700)">Pending Approval</div>
-      </div>
-      <span class="badge" style="background:var(--c-amber-400);color:#fff;font-weight:700">${pendingApproval.length} awaiting review</span>
-    </div>
-    ${pendingApproval.map(t => `
-      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--clr-surface);border:1px solid var(--c-amber-300);border-left:4px solid var(--c-amber-400);border-radius:var(--r-md);margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
-        ${priBadge((t.priority||'medium').toLowerCase())}
-        <div style="flex:1;min-width:0">
-          <div class="text-sm font-semibold truncate">${t.title}</div>
-          <div class="text-xs text-muted mt-2">Submitted by <strong>${t.employeename}</strong> · ${t.categoryname || t.taskcategory}</div>
-        </div>
-        <button class="btn btn-primary btn-sm" style="background:var(--c-amber-500);border-color:var(--c-amber-500);font-weight:600" onclick="openReviewModal(${t.taskid}, '${(t.title||'').replace(/'/g,'')}')">Review</button>
-      </div>`).join('')}
-  </div>` : ''}
+  <div id="emp-progress-section" style="margin-top:16px"></div>
 
-  <div id="emp-progress-section" style="margin-top:16px"></div>`;
+  <div id="achievement-feed-section" style="margin-top:16px"></div>`;
+
 }
 
 // ── Employee Dashboard ─────────────────────────────────────
@@ -871,6 +885,7 @@ function renderEmployeeDash() {
       </div>
 
       ${renderHoursBreakdownWidget(dash)}
+      ${renderTimeUtilizationWidget(dash)}
     </div>
 
     <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:14px">
@@ -884,11 +899,11 @@ function renderEmployeeDash() {
             <button class="btn btn-sm" style="width:100%;background:var(--c-violet-600);color:#fff;margin-top:8px" onclick="claimFloatingTask(${t._apiId}, this)">Pick Up Task</button>
           </div>`).join('') : '<p class="text-muted text-xs">No floating tasks available.</p>'}
       </div>
+      <div id="achievement-feed-section"></div>
       <div class="card">
         <div class="section-header mb-12"><div class="section-title">My Progress</div></div>
         <canvas id="emp-progress-chart" height="160"></canvas>
       </div>
-      ${renderTimeUtilizationWidget(dash)}
     </div>
   </div>`;
 }
@@ -1073,15 +1088,49 @@ function getRoleUserId() {
   return 'u1';
 }
 
+let _hodTaskScope = 'mine'; // 'mine' | 'org'
+
 function renderTasksPage() {
-  // Use API cache when available (employee & supervisor), fall back to mock
-  const visibleTasks = apiCache.tasks.length
-    ? apiCache.tasks
-    : getVisibleTasks(getRoleUserId());
+  // Show HOD scope tabs if role is HOD
+  const scopeBar = document.getElementById('hod-task-scope-bar');
+  if (scopeBar) scopeBar.style.display = state.role === 'hod' ? '' : 'none';
+
+  // Sync tab button active state to current scope
+  document.querySelectorAll('.hod-scope-tab').forEach(b => b.classList.remove('active'));
+  const activeTab = document.getElementById(_hodTaskScope === 'org' ? 'hod-scope-org' : 'hod-scope-mine');
+  if (activeTab) activeTab.classList.add('active');
+
+  const tasks = _hodTaskScopeTasks();
   const countEl = document.getElementById('tasks-count');
-  if (countEl) countEl.textContent = `${visibleTasks.length} task${visibleTasks.length !== 1 ? 's' : ''}`;
-  renderTasksList(visibleTasks);
-  renderKanban(visibleTasks);
+  if (countEl) countEl.textContent = `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`;
+  renderTasksList(tasks);
+  renderKanban(tasks);
+}
+
+function _hodTaskScopeTasks() {
+  if (state.role === 'hod' && _hodTaskScope === 'org') {
+    return apiCache.orgTasks.length ? apiCache.orgTasks : [];
+  }
+  return apiCache.tasks.length ? apiCache.tasks : getVisibleTasks(getRoleUserId());
+}
+
+async function setHodTaskScope(scope, btn) {
+  _hodTaskScope = scope;
+  document.querySelectorAll('.hod-scope-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  if (scope === 'org' && !apiCache.orgTasks.length) {
+    const countEl = document.getElementById('tasks-count');
+    if (countEl) countEl.textContent = 'Loading…';
+    try {
+      const data = await apiFetch('/supervisor/tasks/org');
+      apiCache.orgTasks = data.tasks.map(normalizeTask);
+    } catch (err) {
+      showToast('Could not load org tasks: ' + err.message, 'error');
+      return;
+    }
+  }
+  renderTasksPage();
 }
 
 async function applyTaskFilters() {
@@ -1206,13 +1255,15 @@ async function openTaskDetail(id) {
   if (sid.startsWith('api-')) {
     // Try cache first; if missing, fetch directly from API
     state.currentTask = apiCache.tasks.find(t => t.id === sid)
+      || apiCache.orgTasks.find(t => t.id === sid)
       || (apiCache.dashboard?.recentTasks || []).map(normalizeTask).find(t => t.id === sid)
       || null;
 
     if (!state.currentTask) {
       try {
         const apiId = sid.replace('api-', '');
-        const res = await employeeApi.getTask(apiId);
+        const endpoint = (state.role === 'employee') ? `/employee/tasks/${apiId}` : `/supervisor/tasks/${apiId}`;
+        const res = await apiFetch(endpoint);
         state.currentTask = res.task ? normalizeTask(res.task) : null;
       } catch (e) {
         showToast('Could not load task details', 'error');
@@ -1242,22 +1293,27 @@ function renderTaskDetail() {
   document.getElementById('topbar-sub').textContent = `${CAT_MAP[t.category]?.label} · ${t.dueDate ? 'Due ' + fmtDate(t.dueDate) : 'No due date'}`;
 
   // Role-based actions
+  const hodOrgView = state.role === 'hod' && _hodTaskScope === 'org';
   let actions = '';
-  if (state.role === 'employee') {
-    if (t.status === 'pending' && t._assignmentId) actions = `<button class="btn btn-primary" onclick="apiAcceptAssignmentFromTasks(${t._assignmentId})">Accept Task</button><button class="btn btn-danger" onclick="apiRejectAssignment(${t._assignmentId})">Reject Task</button>`;
-    else if (t.status === 'inprogress') actions = `<button class="btn btn-primary" onclick="openModal('modal-submit')">${icon('submit',14)} Submit Work</button>`;
-  } else if (state.role === 'supervisor' || state.role === 'hod') {
-    if (t.mode === 'self' && t.status === 'inprogress') {
-      actions = `<button class="btn btn-primary" onclick="openModal('modal-submit')">${icon('submit',14)} Submit Work</button>`;
-    } else if (t.status === 'review') {
-      actions = `<button class="btn btn-success" onclick="openReviewModal(${t._apiId || t.id}, '${(t.title||'').replace(/'/g,'')}')">Review Submission</button>`;
+  if (!hodOrgView) {
+    if (state.role === 'employee') {
+      if (t.status === 'pending' && t._assignmentId) actions = `<button class="btn btn-primary" onclick="apiAcceptAssignmentFromTasks(${t._assignmentId})">Accept Task</button><button class="btn btn-danger" onclick="apiRejectAssignment(${t._assignmentId})">Reject Task</button>`;
+      else if (t.status === 'inprogress' || t.status === 'overdue') actions = `<button class="btn btn-primary" onclick="openModal('modal-submit')">${icon('submit',14)} Submit Work</button>`;
+    } else if (state.role === 'supervisor' || state.role === 'hod') {
+      if (t.mode === 'self' && (t.status === 'inprogress' || t.status === 'overdue')) {
+        actions = `<button class="btn btn-primary" onclick="openModal('modal-submit')">${icon('submit',14)} Submit Work</button>`;
+      } else if (t.status === 'review') {
+        actions = `<button class="btn btn-success" onclick="openReviewModal(${t._apiId || t.id}, '${(t.title||'').replace(/'/g,'')}')">Review Submission</button>`;
+      }
+      actions += `<button class="btn btn-secondary" onclick="showToast('Task edited','success')">Edit Task</button>`;
     }
-    actions += `<button class="btn btn-secondary" onclick="showToast('Task edited','success')">Edit Task</button>`;
   }
 
   const assigneeHtml = t.assignees.length
     ? `<div class="avatar-stack">${t.assignees.map(id=>avatarForUser(id,'sm',t)).join('')}</div><div class="text-xs text-muted">${t.assignees.map(id=>{const e=EMPLOYEES.find(e=>e.id===id);return e?.name || t._assigneeNames?.[id] || '';}).filter(Boolean).join(', ')}</div>`
-    : `<span class="badge status-floating">Floating — open for pickup</span>`;
+    : (t.mode === 'floating' && t.status === 'pending'
+        ? `<span class="badge status-floating">Open for pickup</span>`
+        : `<span class="text-muted text-xs">—</span>`);
 
   const scheduledNotifHtml = t.scheduledNotif
     ? `<div style="display:flex;align-items:center;gap:6px;padding:8px;background:var(--c-amber-50);border:1px solid var(--c-amber-100);border-radius:var(--r-md);margin-bottom:12px;font-size:0.75rem;color:var(--c-amber-600)">${icon('clock',12)}<span>Notification scheduled: ${t.scheduledNotif}</span></div>`
@@ -1277,10 +1333,10 @@ function renderTaskDetail() {
         ${scheduledNotifHtml}
         <div class="tab-bar" id="detail-tab-bar">
           <button class="tab-btn active" onclick="switchDetailTab('overview',this)">Overview</button>
-          <button class="tab-btn" onclick="switchDetailTab('chat',this)">${icon('msg',13)} Chat <span class="tab-count">${t.chat.length}</span></button>
+          <button class="tab-btn" onclick="switchDetailTab('chat',this)">${icon('msg',13)} Chat</button>
           <button class="tab-btn" onclick="switchDetailTab('files',this)">Files <span class="tab-count">${t.files.length}</span></button>
-          <button class="tab-btn" onclick="switchDetailTab('log',this)">Data Log</button>
-          ${t.hasInspection ? `<button class="tab-btn" onclick="switchDetailTab('inspect',this)">Inspection</button>` : ''}
+          ${!hodOrgView ? `<button class="tab-btn" onclick="switchDetailTab('log',this)">Data Log</button>` : ''}
+          ${!hodOrgView && t.hasInspection ? `<button class="tab-btn" onclick="switchDetailTab('inspect',this)">Inspection</button>` : ''}
           <button class="tab-btn" onclick="switchDetailTab('submissions',this)">Submissions <span class="tab-count">${t.submissions.length}</span></button>
         </div>
 
@@ -1306,26 +1362,16 @@ function renderTaskDetail() {
 
         <!-- Chat Tab -->
         <div class="tab-panel" id="dtab-chat">
-          ${t.chat.length === 0 && t.status === 'floating' ? `<div class="empty-state">${icon('msg',40)}<h3>Chat opens when task starts</h3><p>Once an employee accepts and starts this task, a scoped chat thread will open automatically.</p></div>` : `
-          <div style="margin-bottom:10px;padding:8px 12px;background:var(--clr-primary-surface);border-radius:var(--r-md);font-size:0.75rem;color:var(--clr-primary)">
-            ${icon('info',12)} Participants: ${(t.assignees.map(id=>{const e=EMPLOYEES.find(x=>x.id===id);return e?e.name:id;}).join(', '))||'Unassigned'}, Mr. Nisal Liyanage${state.role === 'hod' ? ' · <span style="text-decoration:underline;cursor:pointer" onclick="showToast(\'Participant added\',\'success\')">Add participant</span>' : ''}
+          ${t.status === 'floating' && !t.assignees.length ? `<div class="empty-state">${icon('msg',40)}<h3>Chat opens when task starts</h3><p>Once an employee accepts and starts this task, a scoped chat thread will open automatically.</p></div>` : `
+          <div id="chat-participants-bar" style="margin-bottom:10px;padding:8px 12px;background:var(--clr-primary-surface);border-radius:var(--r-md);font-size:0.75rem;color:var(--clr-primary)">
+            ${icon('info',12)} Loading participants…
           </div>
           <div class="chat-area">
-            <div class="chat-messages">
-              ${t.chat.map(m => `
-                <div class="chat-msg ${m.mine?'mine':''}">
-                  ${!m.mine ? avatar(m.name.split(' ').map(w=>w[0]).join(''), m.sender==='u1'?'#2563eb':'#7c3aed','xs') : ''}
-                  <div>
-                    ${!m.mine ? `<div class="chat-sender">${m.name}</div>` : ''}
-                    <div class="chat-bubble">${m.text}</div>
-                    <div class="chat-time">${m.time}</div>
-                  </div>
-                  ${m.mine ? avatar('ED','#059669','xs') : ''}
-                </div>`).join('')}
+            <div class="chat-messages" id="chat-messages-box">
+              <p class="text-muted text-xs" style="padding:12px 0">Loading messages…</p>
             </div>
             <div class="chat-input-area">
-              <button class="btn btn-secondary btn-icon btn-sm">${icon('clip',14)}</button>
-              <textarea class="chat-input" placeholder="Type a message…" rows="1"></textarea>
+              <textarea class="chat-input" placeholder="Type a message…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg();}"></textarea>
               <button class="btn btn-primary btn-icon btn-sm" onclick="sendChatMsg()">${icon('send',14)}</button>
             </div>
           </div>`}
@@ -1618,10 +1664,168 @@ function switchDetailTab(tabId, btn) {
   document.querySelectorAll('[id^="dtab-"]').forEach(p => p.classList.remove('active'));
   const panel = document.getElementById(`dtab-${tabId}`);
   if (panel) panel.classList.add('active');
+  if (tabId === 'chat') loadChatMessages();
 }
 
-function sendChatMsg() {
-  showToast('Message sent','success');
+// ── Chat ───────────────────────────────────────────────────
+let _chatApiId = null;
+
+function _chatEndpoint() {
+  const t = state.currentTask;
+  if (!t) return null;
+  const apiId = t._apiId || t.id?.replace('api-', '');
+  if (!apiId || isNaN(apiId)) return null;
+  const base = (state.role === 'employee') ? '/employee/tasks' : '/tasks';
+  return `${base}/${apiId}/messages`;
+}
+
+async function loadChatMessages() {
+  const endpoint = _chatEndpoint();
+  if (!endpoint) return;
+  const box = document.getElementById('chat-messages-box');
+  if (!box) return;
+
+  const t = state.currentTask;
+  const taskApiId = t?._apiId || t?.id?.replace('api-', '');
+
+  try {
+    const [msgData, partData] = await Promise.all([
+      apiFetch(endpoint),
+      taskApiId ? apiFetch(`/tasks/${taskApiId}/chat-participants`).catch(() => ({ participants: [] })) : Promise.resolve({ participants: [] }),
+    ]);
+    _chatApiId = endpoint;
+    renderChatMessages(msgData.messages || [], box);
+    renderChatParticipants(partData.participants || [], taskApiId);
+  } catch (err) {
+    if (box) box.innerHTML = `<p class="text-muted text-xs" style="padding:16px">Could not load messages: ${err.message}</p>`;
+  }
+}
+
+function renderChatParticipants(participants, taskApiId) {
+  const bar = document.getElementById('chat-participants-bar');
+  if (!bar) return;
+  const names = participants.map(p => p.name).join(', ') || 'No participants yet';
+  const addBtn = (state.role === 'hod')
+    ? ` · <span style="text-decoration:underline;cursor:pointer;font-weight:600" onclick="openAddParticipantModal(${taskApiId})">+ Add participant</span>`
+    : '';
+  bar.innerHTML = `${icon('info',12)} <strong>Participants:</strong> ${escHtml(names)}${addBtn}`;
+}
+
+async function openAddParticipantModal(taskApiId) {
+  // Load all org users to pick from
+  let users = [];
+  try {
+    const data = await apiFetch('/team');
+    users = data.users || [];
+  } catch (e) {
+    showToast('Could not load users', 'error'); return;
+  }
+
+  // Build modal content
+  const modal = document.getElementById('modal-add-chat-participant');
+  if (!modal) return;
+  const list = document.getElementById('add-participant-user-list');
+  if (list) {
+    list.innerHTML = users.map(u => `
+      <div class="participant-option" onclick="addChatParticipant(${taskApiId}, ${u.userid}, this)">
+        ${avatar((u.name||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase(), '#2563eb', 'xs')}
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:0.85rem">${escHtml(u.name)}</div>
+          <div style="font-size:0.75rem;color:var(--clr-text-muted)">${escHtml(u.designation||u.role||'')}</div>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('add-participant-task-id').value = taskApiId;
+  openModal('modal-add-chat-participant');
+}
+
+function filterParticipantList(query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll('#add-participant-user-list .participant-option').forEach(el => {
+    el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+async function addChatParticipant(taskApiId, userId, el) {
+  try {
+    await apiFetch(`/tasks/${taskApiId}/chat-participants`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    });
+    if (el) {
+      el.style.opacity = '0.5';
+      el.style.pointerEvents = 'none';
+      el.querySelector('div div:first-child').textContent += ' ✓';
+    }
+    showToast('Participant added to chat', 'success');
+    // Refresh participant bar
+    const partData = await apiFetch(`/tasks/${taskApiId}/chat-participants`).catch(() => ({ participants: [] }));
+    renderChatParticipants(partData.participants || [], taskApiId);
+  } catch (err) {
+    showToast(err.message || 'Failed to add participant', 'error');
+  }
+}
+
+function renderChatMessages(messages, box) {
+  if (!box) box = document.getElementById('chat-messages-box');
+  if (!box) return;
+  if (!messages.length) {
+    box.innerHTML = `<p class="text-muted text-xs" style="padding:12px 0">No messages yet. Start the conversation.</p>`;
+    box.scrollTop = 0;
+    return;
+  }
+  box.innerHTML = messages.map(m => {
+    const mine = parseInt(m.senderid) === state.userId;
+    const initials = (m.sendername || '?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    // stable colour from sender id
+    const palette = ['#2563eb','#7c3aed','#059669','#d97706','#0891b2','#dc2626','#ea580c'];
+    const col = palette[(parseInt(m.senderid) || 0) % palette.length];
+    const time = m.sentat ? new Date(m.sentat).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+
+    if (mine) {
+      return `
+      <div class="chat-msg mine">
+        <div>
+          <div class="chat-bubble">${escHtml(m.content)}</div>
+          <div class="chat-time">${time}</div>
+        </div>
+      </div>`;
+    }
+    return `
+    <div class="chat-msg">
+      ${avatar(initials, col, 'xs')}
+      <div>
+        <div class="chat-sender">${escHtml(m.sendername)}</div>
+        <div class="chat-bubble">${escHtml(m.content)}</div>
+        <div class="chat-time">${time}</div>
+      </div>
+    </div>`;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendChatMsg() {
+  const endpoint = _chatEndpoint();
+  if (!endpoint) { showToast('No task selected', 'error'); return; }
+  const textarea = document.querySelector('#dtab-chat .chat-input');
+  const content  = textarea?.value.trim();
+  if (!content) return;
+
+  const sendBtn = document.querySelector('#dtab-chat .chat-input-area .btn-primary');
+  if (sendBtn) sendBtn.disabled = true;
+
+  try {
+    await apiFetch(endpoint, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+    textarea.value = '';
+    await loadChatMessages();
+  } catch (err) {
+    showToast(err.message || 'Failed to send message', 'error');
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+  }
 }
 
 // ── Task Create ────────────────────────────────────────────
@@ -3830,6 +4034,8 @@ async function renderOperationalPage() {
   }, 50);
 }
 
+let _reportData = null; // cached for export functions
+
 async function renderReportsPage() {
   const el = document.getElementById('reports-content');
   if (!el) return;
@@ -3843,6 +4049,7 @@ async function renderReportsPage() {
     return;
   }
 
+  _reportData = data;
   const { stats, trend, byCategory } = data;
   const s = stats;
 
@@ -3856,6 +4063,22 @@ async function renderReportsPage() {
   }
 
   el.innerHTML = `
+    <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:18px;gap:8px">
+      <div style="position:relative;display:inline-block" id="report-dl-menu-wrap">
+        <button class="btn btn-secondary" style="display:flex;align-items:center;gap:6px;font-size:0.82rem" onclick="toggleReportDownloadMenu()">
+          ${icon('submit',13)} Download Report ▾
+        </button>
+        <div id="report-dl-menu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--clr-surface);border:1px solid var(--clr-border);border-radius:var(--r-md);box-shadow:var(--shadow-md);min-width:160px;z-index:200;overflow:hidden">
+          <button onclick="exportReportCSV()" style="width:100%;text-align:left;padding:9px 14px;font-size:0.82rem;background:none;border:none;cursor:pointer;color:var(--clr-text);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--clr-border)" onmouseover="this.style.background='var(--clr-surface-hover)'" onmouseout="this.style.background='none'">
+            ${icon('tasks',13)} Export as CSV
+          </button>
+          <button onclick="exportReportPDF()" style="width:100%;text-align:left;padding:9px 14px;font-size:0.82rem;background:none;border:none;cursor:pointer;color:var(--clr-text);display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--clr-surface-hover)'" onmouseout="this.style.background='none'">
+            ${icon('report',13)} Export as PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="d-flex gap-16 mb-20" style="flex-wrap:wrap">
       <div class="stat-card" style="flex:1;min-width:160px">
         <div class="stat-icon" style="background:var(--c-blue-50);color:var(--c-blue-600)">${icon('tasks',20)}</div>
@@ -3919,6 +4142,12 @@ async function renderReportsPage() {
         <div class="card-header"><div class="card-title">By Category</div></div>
         ${byCategory.some(c => c.total > 0) ? `<canvas id="report-cat-chart" height="200"></canvas>` : `<p class="text-muted text-xs" style="padding:24px 0">No tasks yet.</p>`}
       </div>
+    </div>
+
+    <div id="report-emp-perf-section" style="margin-top:24px">
+      <div style="display:flex;align-items:center;justify-content:center;padding:32px;color:var(--clr-text-3);gap:8px;font-size:0.82rem">
+        ${icon('log',14)} Loading employee performance…
+      </div>
     </div>`;
 
   // Draw charts after DOM is ready
@@ -3932,6 +4161,305 @@ async function renderReportsPage() {
       })));
     }
   }, 50);
+
+  // Load employee performance section non-blocking
+  loadEmployeePerformanceSection();
+}
+
+let _empPerfData = [];
+let _empPerfSort = { col: 'name', dir: 1 };
+
+async function loadEmployeePerformanceSection() {
+  const sec = document.getElementById('report-emp-perf-section');
+  if (!sec) return;
+  try {
+    const data = await apiFetch('/reports/employee-performance');
+    _empPerfData = data.employees || [];
+    renderEmployeePerformanceSection();
+  } catch (err) {
+    sec.innerHTML = `<div class="card"><p class="text-sm" style="color:var(--c-red-500)">Could not load employee data: ${err.message}</p></div>`;
+  }
+}
+
+function sortEmpPerf(col) {
+  if (_empPerfSort.col === col) {
+    _empPerfSort.dir *= -1;
+  } else {
+    _empPerfSort.col = col;
+    _empPerfSort.dir = col === 'name' ? 1 : -1; // default: names asc, numbers desc
+  }
+  renderEmployeePerformanceSection();
+}
+
+function renderEmployeePerformanceSection() {
+  const sec = document.getElementById('report-emp-perf-section');
+  if (!sec) return;
+
+  const emps = [..._empPerfData].sort((a, b) => {
+    const av = a[_empPerfSort.col] ?? '';
+    const bv = b[_empPerfSort.col] ?? '';
+    if (typeof av === 'number') return (av - bv) * _empPerfSort.dir;
+    return String(av).localeCompare(String(bv)) * _empPerfSort.dir;
+  });
+
+  function thBtn(col, label) {
+    const active = _empPerfSort.col === col;
+    const arrow  = active ? (_empPerfSort.dir > 0 ? ' ↑' : ' ↓') : '';
+    return `<th class="emp-perf-th${active ? ' active' : ''}" onclick="sortEmpPerf('${col}')">${label}${arrow}</th>`;
+  }
+
+  function scoreBar(val, max, color) {
+    const pct = max > 0 ? Math.min(100, Math.round((val / max) * 100)) : 0;
+    return `<div style="height:5px;border-radius:3px;background:var(--clr-border);margin-top:3px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .4s"></div>
+    </div>`;
+  }
+
+  const maxTotal     = Math.max(...emps.map(e => e.total), 1);
+  const maxOverdue   = Math.max(...emps.map(e => e.overdue), 1);
+
+  const rows = emps.map(e => {
+    const initials = e.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+    const avatarColor = `hsl(${(e.userid * 67) % 360},50%,42%)`;
+
+    const rateColor = e.completionRate >= 80 ? '#16a34a' : e.completionRate >= 50 ? '#d97706' : '#dc2626';
+    const ontimeColor = e.onTimeRate === null ? '#94a3b8'
+                      : e.onTimeRate >= 80 ? '#16a34a'
+                      : e.onTimeRate >= 50 ? '#d97706' : '#dc2626';
+
+    const statusCells = [
+      { label: 'Completed', val: e.completed, color: '#16a34a' },
+      { label: 'In Progress', val: e.inprogress, color: '#2563eb' },
+      { label: 'Overdue', val: e.overdue, color: '#dc2626' },
+      { label: 'Pending', val: e.pending, color: '#94a3b8' },
+    ].map(s => `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;color:var(--clr-text-2)">
+        <span style="width:7px;height:7px;border-radius:50%;background:${s.color};display:inline-block"></span>${s.label}: <strong style="color:var(--clr-text)">${s.val}</strong>
+      </span>`).join('');
+
+    return `
+    <tr class="emp-perf-row">
+      <td style="padding:12px 14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          ${avatar(initials, avatarColor, 'sm')}
+          <div>
+            <div style="font-weight:600;font-size:0.85rem;color:var(--clr-text)">${escHtml(e.name)}</div>
+            <div style="font-size:0.72rem;color:var(--clr-text-3)">${escHtml(e.designation)} · ${escHtml(e.division)}</div>
+          </div>
+        </div>
+      </td>
+      <td style="padding:12px 8px;font-size:0.72rem;color:var(--clr-text-3)">${escHtml(e.supervisor)}</td>
+      <td style="padding:12px 8px;text-align:center">
+        <span style="font-weight:700;font-size:0.95rem">${e.total}</span>
+        ${scoreBar(e.total, maxTotal, '#2563eb')}
+      </td>
+      <td style="padding:12px 8px">
+        <div style="display:flex;flex-wrap:wrap;gap:6px 14px">${statusCells}</div>
+      </td>
+      <td style="padding:12px 8px;text-align:center">
+        <span style="font-weight:700;font-size:0.9rem;color:${rateColor}">${e.completionRate}%</span>
+        <div style="height:5px;border-radius:3px;background:var(--clr-border);margin-top:3px;overflow:hidden">
+          <div style="height:100%;width:${e.completionRate}%;background:${rateColor};border-radius:3px"></div>
+        </div>
+      </td>
+      <td style="padding:12px 8px;text-align:center">
+        <span style="font-weight:700;font-size:0.9rem;color:${ontimeColor}">${e.onTimeRate !== null ? e.onTimeRate + '%' : '—'}</span>
+      </td>
+      <td style="padding:12px 8px;text-align:center">
+        <span style="font-weight:600;font-size:0.85rem">${e.overdue > 0 ? `<span style="color:#dc2626">${e.overdue}</span>` : '<span style="color:#16a34a">0</span>'}</span>
+        ${scoreBar(e.overdue, maxOverdue, '#dc2626')}
+      </td>
+      <td style="padding:12px 14px;text-align:center">
+        <span style="font-size:0.82rem;color:var(--clr-text-2)">${e.avgHrs > 0 ? e.avgHrs + 'h' : '—'}</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const emptyRow = emps.length === 0
+    ? `<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--clr-text-3);font-size:0.82rem">No employee data available.</td></tr>`
+    : '';
+
+  sec.innerHTML = `
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="card-header" style="padding:16px 20px 14px;border-bottom:1px solid var(--clr-border);margin-bottom:0">
+      <div>
+        <div class="card-title">Employee Work Performance</div>
+        <div style="font-size:0.72rem;color:var(--clr-text-3);margin-top:2px">${emps.length} employee${emps.length !== 1 ? 's' : ''} · click column headers to sort</div>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="emp-perf-table">
+        <thead>
+          <tr>
+            ${thBtn('name', 'Employee')}
+            ${thBtn('supervisor', 'Supervisor')}
+            ${thBtn('total', 'Total Tasks')}
+            <th class="emp-perf-th">Breakdown</th>
+            ${thBtn('completionRate', 'Completion Rate')}
+            ${thBtn('onTimeRate', 'On-Time Rate')}
+            ${thBtn('overdue', 'Overdue')}
+            ${thBtn('avgHrs', 'Avg Hours')}
+          </tr>
+        </thead>
+        <tbody>${rows}${emptyRow}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function toggleReportDownloadMenu() {
+  const menu = document.getElementById('report-dl-menu');
+  if (!menu) return;
+  const open = menu.style.display !== 'none';
+  menu.style.display = open ? 'none' : 'block';
+  if (!open) {
+    const close = e => {
+      if (!document.getElementById('report-dl-menu-wrap')?.contains(e.target)) {
+        menu.style.display = 'none';
+        document.removeEventListener('click', close);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  }
+}
+
+function exportReportCSV() {
+  document.getElementById('report-dl-menu').style.display = 'none';
+  const d = _reportData;
+  if (!d) return;
+
+  const now = new Date().toLocaleDateString();
+  const rows = [];
+
+  // Summary KPIs
+  rows.push(['QHSE Task Performance Report', '', `Generated: ${now}`]);
+  rows.push([]);
+  rows.push(['SUMMARY']);
+  rows.push(['Metric', 'Value', 'vs Last Month']);
+  rows.push(['Total Tasks This Month', d.stats.totalThisMonth, (d.stats.totalDelta >= 0 ? '+' : '') + d.stats.totalDelta]);
+  rows.push(['Completion Rate', d.stats.completionRate + '%', (d.stats.completionRateDelta >= 0 ? '+' : '') + d.stats.completionRateDelta + '%']);
+  rows.push(['Avg Task Duration (h)', d.stats.avgDuration || '—', (d.stats.avgDurationDelta >= 0 ? '+' : '') + d.stats.avgDurationDelta + 'h']);
+  rows.push(['Overdue Tasks', d.stats.overdueTotal, (d.stats.overdueDelta >= 0 ? '+' : '') + d.stats.overdueDelta]);
+  rows.push([]);
+
+  // Trend
+  rows.push(['COMPLETION TREND (last 8 weeks)']);
+  rows.push(['Week', 'Completed', 'Overdue']);
+  (d.trend || []).forEach(r => rows.push([r.label, r.completed, r.overdue]));
+  rows.push([]);
+
+  // By Category
+  rows.push(['BY CATEGORY']);
+  rows.push(['Category', 'Total', 'Completed', 'Completion Rate']);
+  (d.byCategory || []).forEach(c => rows.push([
+    c.name, c.total, c.completed,
+    c.total > 0 ? Math.round((c.completed / c.total) * 100) + '%' : '—',
+  ]));
+
+  const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: `QHSE_Report_${now.replace(/\//g,'-')}.csv` });
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  showToast('CSV downloaded', 'success');
+}
+
+function exportReportPDF() {
+  document.getElementById('report-dl-menu').style.display = 'none';
+  const d = _reportData;
+  if (!d) return;
+
+  const now = new Date().toLocaleDateString();
+
+  const catRows = (d.byCategory || []).map(c => `
+    <tr>
+      <td>${escHtml(c.name)}</td>
+      <td>${c.total}</td>
+      <td>${c.completed}</td>
+      <td>${c.total > 0 ? Math.round((c.completed / c.total) * 100) + '%' : '—'}</td>
+    </tr>`).join('');
+
+  const trendRows = (d.trend || []).map(r => `
+    <tr>
+      <td>${escHtml(r.label)}</td>
+      <td>${r.completed}</td>
+      <td>${r.overdue}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>QHSE Task Performance Report</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e293b; background: #fff; padding: 36px 48px; }
+  h1 { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+  .subtitle { color: #64748b; font-size: 11px; margin-bottom: 28px; }
+  .generated { font-size: 10px; color: #94a3b8; margin-bottom: 28px; }
+  .kpi-row { display: flex; gap: 16px; margin-bottom: 28px; }
+  .kpi { flex: 1; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; }
+  .kpi-val { font-size: 22px; font-weight: 700; color: #0f172a; }
+  .kpi-label { font-size: 10px; color: #64748b; margin-top: 2px; }
+  .kpi-delta { font-size: 10px; margin-top: 4px; }
+  .kpi-delta.up { color: #16a34a; } .kpi-delta.down { color: #dc2626; }
+  h2 { font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 28px; font-size: 11px; }
+  th { background: #f8fafc; text-align: left; padding: 7px 10px; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 6px 10px; border-bottom: 1px solid #f1f5f9; }
+  tr:last-child td { border-bottom: none; }
+  .footer { font-size: 10px; color: #94a3b8; text-align: center; margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+  @media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+<h1>QHSE Task Performance Report</h1>
+<div class="subtitle">Performance & completion analytics</div>
+<div class="generated">Generated on ${now}</div>
+
+<div class="kpi-row">
+  <div class="kpi">
+    <div class="kpi-val">${d.stats.totalThisMonth}</div>
+    <div class="kpi-label">Total Tasks This Month</div>
+    <div class="kpi-delta ${d.stats.totalDelta >= 0 ? 'up' : 'down'}">${d.stats.totalDelta >= 0 ? '↑' : '↓'} ${Math.abs(d.stats.totalDelta)} vs last month</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val">${d.stats.completionRate}%</div>
+    <div class="kpi-label">Completion Rate</div>
+    <div class="kpi-delta ${d.stats.completionRateDelta >= 0 ? 'up' : 'down'}">${d.stats.completionRateDelta >= 0 ? '↑' : '↓'} ${Math.abs(d.stats.completionRateDelta)}% vs last month</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val">${d.stats.avgDuration > 0 ? d.stats.avgDuration + 'h' : '—'}</div>
+    <div class="kpi-label">Avg Task Duration</div>
+    <div class="kpi-delta">${d.stats.avgDuration > 0 ? (d.stats.avgDurationDelta >= 0 ? '↑' : '↓') + ' ' + Math.abs(d.stats.avgDurationDelta) + 'h vs last month' : 'No completed tasks yet'}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val">${d.stats.overdueTotal}</div>
+    <div class="kpi-label">Overdue Tasks</div>
+    <div class="kpi-delta ${d.stats.overdueDelta <= 0 ? 'up' : 'down'}">${d.stats.overdueDelta >= 0 ? '↑' : '↓'} ${Math.abs(d.stats.overdueDelta)} vs last month</div>
+  </div>
+</div>
+
+<h2>Completion Trend (Last 8 Weeks)</h2>
+<table>
+  <thead><tr><th>Week</th><th>Completed</th><th>Overdue</th></tr></thead>
+  <tbody>${trendRows}</tbody>
+</table>
+
+<h2>By Category</h2>
+<table>
+  <thead><tr><th>Category</th><th>Total</th><th>Completed</th><th>Completion Rate</th></tr></thead>
+  <tbody>${catRows}</tbody>
+</table>
+
+<div class="footer">TaskFlow Pro — QHSE Task Performance Dashboard · ${now}</div>
+<script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
 }
 
 let _trendPeriod = '7d';
@@ -3978,13 +4506,12 @@ async function switchTrendPeriod(period, btn) {
     }
     area.innerHTML = `<canvas id="report-trend-chart" height="200"></canvas>`;
     setTimeout(() => {
-      const allDatasets = [
-        { data: trend.map(r => r.completed), color: '#2563eb', label: 'Completed' },
-        { data: trend.map(r => r.overdue),   color: '#dc2626', label: 'Overdue'   },
-      ];
       drawLineChart('report-trend-chart', {
         labels:   trend.map(r => r.label),
-        datasets: allDatasets.filter(d => d.data.some(v => v > 0)),
+        datasets: [
+          { data: trend.map(r => r.completed), color: '#2563eb', label: 'Completed' },
+          { data: trend.map(r => r.overdue),   color: '#dc2626', label: 'Overdue'   },
+        ],
       });
     }, 20);
   } catch (err) {
@@ -4274,6 +4801,143 @@ function toggleTheme() {
     ? `<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>`
     : `<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>`;
   setTimeout(() => { if (state.currentPage === 'dashboard') drawHODCharts() || drawSupervisorCharts() || drawEmployeeCharts(); }, 80);
+}
+
+// ── Achievements ──────────────────────────────────────────
+
+const BADGE_EMOJI = { star:'⭐', trophy:'🏆', medal:'🥇', rocket:'🚀', shield:'🛡️', fire:'🔥', heart:'❤️', crown:'👑' };
+
+async function loadAchievementFeed() {
+  const el = document.getElementById('achievement-feed-section');
+  if (!el) return;
+  try {
+    const data = await apiFetch('/achievements?limit=20');
+    apiCache.achievements = data.achievements || [];
+    el.innerHTML = renderAchievementFeed(apiCache.achievements);
+  } catch (err) {
+    console.warn('Achievement feed failed:', err.message);
+  }
+}
+
+function renderAchievementFeed(achievements) {
+  const canDelete = state.role === 'supervisor' || state.role === 'hod' || state.role === 'admin';
+
+  return `
+  <div class="achievement-card-wrapper">
+    <div class="card" style="position:relative;z-index:1">
+    <div class="section-header mb-12">
+      <div class="section-title">🏅 Employee Achievements</div>
+      ${canDelete ? `<button class="btn btn-secondary btn-sm" onclick="openAwardAchievementModal()">${icon('star',13)} Award</button>` : ''}
+    </div>
+    ${achievements.length ? `
+    <div class="achievement-feed">
+      ${achievements.map(a => {
+        const emoji = BADGE_EMOJI[a.badge] || '⭐';
+        const badgeCls = `badge-${a.badge || 'star'}`;
+        const recipientInitials = (a.username || '?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+        const recipientColor = `hsl(${(a.userid * 67) % 360},55%,45%)`;
+        return `
+        <div class="achievement-card">
+          <div class="achievement-badge-icon ${badgeCls}">${emoji}</div>
+          <div style="flex-shrink:0;margin-top:2px">${avatar(recipientInitials, recipientColor, 'sm')}</div>
+          <div class="achievement-body">
+            <div class="achievement-title">${escHtml(a.title)}</div>
+            <div style="font-size:0.9rem;font-weight:700;color:var(--clr-primary);margin-top:3px">${escHtml(a.username)}</div>
+            ${a.description ? `<div class="achievement-desc">${escHtml(a.description)}</div>` : ''}
+            <div class="achievement-meta">
+              ${a.designation || a.division ? `<span>${escHtml(a.designation || a.division)}</span><span>·</span>` : ''}
+              <span>Awarded by <strong>${escHtml(a.awardedbyname)}</strong></span>
+              <span>·</span>
+              <span class="tabular-nums">${fmtDate(a.createdat)}</span>
+            </div>
+          </div>
+          ${canDelete && parseInt(a.awardedby) === state.userId ? `
+            <button class="achievement-delete-btn" onclick="deleteAchievement(${a.achievementid},this)" title="Remove">✕</button>
+          ` : ''}
+        </div>`;
+      }).join('')}
+    </div>` : `<p class="text-muted text-sm" style="padding:8px 0">No achievements awarded yet.</p>`}
+  </div>
+  </div>`;
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function deleteAchievement(id, btn) {
+  if (!confirm('Remove this achievement?')) return;
+  btn.disabled = true;
+  try {
+    await apiFetch(`/achievements/${id}`, { method: 'DELETE' });
+    apiCache.achievements = apiCache.achievements.filter(a => a.achievementid !== id);
+    const el = document.getElementById('achievement-feed-section');
+    if (el) el.innerHTML = renderAchievementFeed(apiCache.achievements);
+    showToast('Achievement removed.', 'success');
+  } catch (err) {
+    showToast(err.message || 'Failed to delete', 'error');
+    btn.disabled = false;
+  }
+}
+
+async function openAwardAchievementModal() {
+  // Populate employee dropdown from team
+  const select = document.getElementById('ach-userid');
+  select.innerHTML = '<option value="">Select employee…</option>';
+  try {
+    const data = await apiFetch('/team');
+    const employees = (data.users || []).filter(u => u.role === 'Employee');
+    employees.forEach(u => {
+      const o = document.createElement('option');
+      o.value = u.userid;
+      o.textContent = u.name + (u.designation ? ` — ${u.designation}` : '');
+      select.appendChild(o);
+    });
+  } catch (e) { /* team list is optional */ }
+
+  document.getElementById('ach-title').value = '';
+  document.getElementById('ach-description').value = '';
+  // reset badge selection to star
+  document.querySelectorAll('#ach-badge-selector .badge-option').forEach(el => el.classList.remove('selected'));
+  const star = document.querySelector('#ach-badge-selector .badge-option[data-badge="star"]');
+  if (star) star.classList.add('selected');
+
+  openModal('modal-award-achievement');
+}
+
+function selectBadge(el) {
+  document.querySelectorAll('#ach-badge-selector .badge-option').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function submitAchievement() {
+  const userid = parseInt(document.getElementById('ach-userid').value);
+  const title   = document.getElementById('ach-title').value.trim();
+  const desc    = document.getElementById('ach-description').value.trim();
+  const badgeEl = document.querySelector('#ach-badge-selector .badge-option.selected');
+  const badge   = badgeEl ? badgeEl.dataset.badge : 'star';
+
+  if (!userid) { showToast('Please select an employee.', 'error'); return; }
+  if (!title)  { showToast('Please enter an achievement title.', 'error'); return; }
+
+  const btn = document.getElementById('ach-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    await apiFetch('/achievements', {
+      method: 'POST',
+      body: JSON.stringify({ userid, title, description: desc || undefined, badge }),
+    });
+    closeModal('modal-award-achievement');
+    showToast('Achievement awarded! 🏅', 'success');
+    await loadAchievementFeed();
+  } catch (err) {
+    showToast(err.message || 'Failed to save achievement', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Award Achievement';
+  }
 }
 
 // ── Auto-login for quick demo ──────────────────────────────

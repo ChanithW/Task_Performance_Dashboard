@@ -346,4 +346,79 @@ router.get('/trend', async (req, res) => {
   }
 });
 
+// GET /reports/employee-performance
+// HOD/Admin → all employees; Supervisor → their direct reports only
+router.get('/employee-performance', async (req, res) => {
+  const { userId, role } = req.user;
+
+  let userWhere, params;
+  if (role === 'HOD' || role === 'Admin') {
+    userWhere = `u.role = 'Employee'`;
+    params    = [];
+  } else {
+    userWhere = `u.role = 'Employee' AND u.reportsto = $1`;
+    params    = [userId];
+  }
+
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        u.userid,
+        u.name,
+        u.designation,
+        u.division,
+        sup.name                                                              AS supervisor,
+        COUNT(t.taskid)                                                       AS total,
+        COUNT(t.taskid) FILTER (WHERE t.status = 'Completed')                AS completed,
+        COUNT(t.taskid) FILTER (WHERE t.status = 'InProgress')               AS inprogress,
+        COUNT(t.taskid) FILTER (WHERE t.status = 'Overdue')                  AS overdue,
+        COUNT(t.taskid) FILTER (WHERE t.status = 'Pending')                  AS pending,
+        COUNT(t.taskid) FILTER (WHERE t.status = 'Submitted')                AS submitted,
+        -- on-time: completed before or on due date
+        COUNT(t.taskid) FILTER (
+          WHERE t.status = 'Completed'
+            AND t.duedate IS NOT NULL
+            AND t.actualdate IS NOT NULL
+            AND t.actualdate <= t.duedate
+        )                                                                     AS on_time,
+        ROUND(COALESCE(AVG(t.totalhrsexpended) FILTER (WHERE t.status = 'Completed'), 0)::numeric, 1)
+                                                                              AS avg_hrs
+      FROM "USER" u
+      LEFT JOIN "USER" sup ON sup.userid = u.reportsto
+      LEFT JOIN TASK_ASSIGNMENT a ON a.assignedto = u.userid AND a.acceptancestatus != 'Rejected'
+      LEFT JOIN TASK t ON t.taskid = a.taskid
+      WHERE ${userWhere}
+      GROUP BY u.userid, u.name, u.designation, u.division, sup.name
+      ORDER BY u.name
+    `, params);
+
+    res.json({
+      employees: rows.map(r => ({
+        userid:         r.userid,
+        name:           r.name,
+        designation:    r.designation || '—',
+        division:       r.division    || '—',
+        supervisor:     r.supervisor  || '—',
+        total:          parseInt(r.total)      || 0,
+        completed:      parseInt(r.completed)  || 0,
+        inprogress:     parseInt(r.inprogress) || 0,
+        overdue:        parseInt(r.overdue)    || 0,
+        pending:        parseInt(r.pending)    || 0,
+        submitted:      parseInt(r.submitted)  || 0,
+        onTime:         parseInt(r.on_time)    || 0,
+        avgHrs:         parseFloat(r.avg_hrs)  || 0,
+        completionRate: parseInt(r.total) > 0
+          ? Math.round((parseInt(r.completed) / parseInt(r.total)) * 100)
+          : 0,
+        onTimeRate: parseInt(r.completed) > 0
+          ? Math.round((parseInt(r.on_time) / parseInt(r.completed)) * 100)
+          : null,
+      })),
+    });
+  } catch (err) {
+    console.error('GET /reports/employee-performance:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

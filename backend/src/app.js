@@ -21,10 +21,12 @@ const supervisorDashboardRoutes = require('./routes/supervisor/dashboard');
 const supervisorKpiRoutes       = require('./routes/supervisor/kpis');
 const employeeKpiRoutes         = require('./routes/employee/kpis');
 const reportsRoutes             = require('./routes/reports');
+const achievementRoutes         = require('./routes/achievements');
 
 const { authenticate, requireEmployee, requireAdmin } = require('./middleware/auth');
 const { runDeadlineReminders } = require('./jobs/deadlineReminder');
 const { runScheduledNotifications } = require('./jobs/scheduledNotifications');
+const { runOverdueMarker } = require('./jobs/overdueMarker');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -42,7 +44,9 @@ app.use('/employee/dashboard',     dashboardRoutes);
 app.use('/employee/profile',       profileRoutes);
 app.use('/employee/tasks',         taskRoutes);         // GET /, GET /:id, POST /, PATCH /:id
 app.use('/employee/tasks',         submissionRoutes);   // POST /:id/submit, GET /:id/submissions
-app.use('/employee/tasks',         messageRoutes);      // GET /:id/messages, POST /:id/messages
+app.use('/employee/tasks',         messageRoutes);      // GET /:id/messages, POST /:id/messages (employee)
+// Chat messages accessible to supervisors/HOD too (access-checked inside the handler)
+app.use('/tasks', authenticate, messageRoutes);         // GET /:id/messages, POST /:id/messages (any role)
 app.use('/employee/assignments',   assignmentRoutes);   // GET /, PATCH /:id/accept, PATCH /:id/reject
 // Todos — accessible to any authenticated user (any role can keep personal todos)
 app.use('/todos', authenticate, todoRoutes);
@@ -175,6 +179,7 @@ app.get('/admin/stats', authenticate, requireAdmin, async (req, res) => {
 
 // ── Admin (requires Admin role JWT) ──────────────────────────
 app.use('/reports',           authenticate, reportsRoutes);
+app.use('/achievements',      authenticate, achievementRoutes);
 app.use('/admin/users',       authenticate, requireAdmin, adminUserRoutes);
 app.use('/admin/categories',  authenticate, requireAdmin, adminCategoryRoutes);
 
@@ -186,6 +191,10 @@ app.listen(PORT, () => {
   if (process.env.DEV_USER_ID) {
     console.log(`DEV MODE: all requests run as user ID ${process.env.DEV_USER_ID} (${process.env.DEV_USER_ROLE || 'Employee'})`);
   }
+
+  // Mark past-due tasks as Overdue on start, then every 15 minutes
+  runOverdueMarker();
+  setInterval(runOverdueMarker, 15 * 60 * 1000);
 
   // Run deadline reminder job once on start, then every hour
   runDeadlineReminders();

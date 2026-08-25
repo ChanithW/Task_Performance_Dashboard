@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
       pool.query(
         `SELECT
            COUNT(*) FILTER (WHERE t.publishmode != 'Self')                                           AS total,
-           COUNT(*) FILTER (WHERE t.publishmode != 'Self' AND t.status = 'InProgress')               AS inprogress,
+           COUNT(*) FILTER (WHERE t.publishmode != 'Self' AND t.status IN ('InProgress','Overdue'))   AS inprogress,
            COUNT(*) FILTER (WHERE t.publishmode != 'Self' AND t.status = 'Completed')                AS completed,
            COUNT(*) FILTER (WHERE t.publishmode != 'Self' AND t.status = 'Pending')                  AS pending,
            COUNT(*) FILTER (WHERE t.publishmode = 'Self')                                            AS self_total,
@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
       pool.query(
         `SELECT u.userid, u.name, u.designation,
                 COUNT(t.taskid)                                                     AS total,
-                COUNT(t.taskid) FILTER (WHERE t.status IN ('InProgress','Pending')) AS active,
+                COUNT(t.taskid) FILTER (WHERE t.status IN ('InProgress','Pending','Overdue')) AS active,
                 COUNT(t.taskid) FILTER (WHERE t.status = 'Completed')               AS completed,
                 COALESCE(SUM(t.totalhrsexpended), 0)                                AS hours_spent
          FROM "USER" u

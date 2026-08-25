@@ -3,35 +3,78 @@ const pool    = require('../../config/db');
 
 const router = express.Router();
 
-// GET /supervisor/tasks — all tasks created by this supervisor
+const TASK_SELECT = `
+  SELECT t.taskid, t.title, t.description, t.priority, t.status,
+         t.publishmode, c.slug AS taskcategory, c.name AS categoryname, c.color AS categorycolor,
+         t.estimatedtime, t.estimatedtimeunit,
+         t.duedate, t.startdate, t.starttime, t.endtime, t.createdat, t.totalhrsexpended,
+         t.division, t.sitename,
+         creator.name AS createdbyname,
+         COALESCE(
+           json_agg(
+             json_build_object('userid', u.userid, 'name', u.name)
+             ORDER BY u.name
+           ) FILTER (WHERE u.userid IS NOT NULL),
+           '[]'
+         ) AS assignees
+  FROM TASK t
+  JOIN categories c ON c.categoryid = t.categoryid
+  JOIN "USER" creator ON creator.userid = t.createdby
+  LEFT JOIN TASK_ASSIGNMENT a ON a.taskid = t.taskid AND a.acceptancestatus != 'Rejected'
+  LEFT JOIN "USER" u ON u.userid = a.assignedto
+`;
+
+// GET /supervisor/tasks — tasks created by this supervisor/HOD
 router.get('/', async (req, res) => {
-  const userId = req.user.userId;
+  const { userId } = req.user;
   try {
     const { rows } = await pool.query(
-      `SELECT t.taskid, t.title, t.description, t.priority, t.status,
-              t.publishmode, c.slug AS taskcategory, c.name AS categoryname, c.color AS categorycolor,
-              t.estimatedtime, t.estimatedtimeunit,
-              t.duedate, t.startdate, t.starttime, t.endtime, t.createdat, t.totalhrsexpended,
-              t.division, t.sitename,
-              COALESCE(
-                json_agg(
-                  json_build_object('userid', u.userid, 'name', u.name)
-                  ORDER BY u.name
-                ) FILTER (WHERE u.userid IS NOT NULL),
-                '[]'
-              ) AS assignees
-       FROM TASK t
-       JOIN categories c ON c.categoryid = t.categoryid
-       LEFT JOIN TASK_ASSIGNMENT a ON a.taskid = t.taskid AND a.acceptancestatus != 'Rejected'
-       LEFT JOIN "USER" u ON u.userid = a.assignedto
+      `${TASK_SELECT}
        WHERE t.createdby = $1
-       GROUP BY t.taskid, c.slug, c.name, c.color
+       GROUP BY t.taskid, c.slug, c.name, c.color, creator.name
        ORDER BY t.createdat DESC`,
       [userId]
     );
     res.json({ tasks: rows });
   } catch (err) {
     console.error('GET /supervisor/tasks:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /supervisor/tasks/org — HOD only: all tasks across the organisation
+router.get('/org', async (req, res) => {
+  if (req.user.role !== 'HOD') return res.status(403).json({ error: 'HOD only' });
+  try {
+    const { rows } = await pool.query(
+      `${TASK_SELECT}
+       WHERE 1=1
+       GROUP BY t.taskid, c.slug, c.name, c.color, creator.name
+       ORDER BY t.createdat DESC`
+    );
+    res.json({ tasks: rows });
+  } catch (err) {
+    console.error('GET /supervisor/tasks/org:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /supervisor/tasks/:taskId — single task (own or org for HOD)
+router.get('/:taskId', async (req, res) => {
+  const { userId, role } = req.user;
+  const taskId = parseInt(req.params.taskId);
+  if (isNaN(taskId)) return res.status(400).json({ error: 'Invalid task ID' });
+  try {
+    const whereClause = role === 'HOD' ? 'WHERE t.taskid = $1' : 'WHERE t.taskid = $1 AND t.createdby = $2';
+    const params = role === 'HOD' ? [taskId] : [taskId, userId];
+    const { rows } = await pool.query(
+      `${TASK_SELECT} ${whereClause} GROUP BY t.taskid, c.slug, c.name, c.color, creator.name`,
+      params
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Task not found' });
+    res.json({ task: rows[0] });
+  } catch (err) {
+    console.error('GET /supervisor/tasks/:taskId:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -225,9 +268,12 @@ router.post('/:taskId/review', async (req, res) => {
       [submissionId, supervisorId, decision, reason || null]
     );
 
-    // Update task status
+    // Update task status; stamp actualdate when approved so trend charts can use it
     const newStatus = decision === 'Approved' ? 'Completed' : 'InProgress';
-    await client.query(`UPDATE TASK SET status = $1 WHERE taskid = $2`, [newStatus, taskId]);
+    await client.query(
+      `UPDATE TASK SET status = $1${decision === 'Approved' ? ', actualdate = CURRENT_DATE' : ''} WHERE taskid = $2`,
+      [newStatus, taskId]
+    );
 
     // Notify the employee
     const supRow = await client.query(`SELECT name FROM "USER" WHERE userid = $1`, [supervisorId]);
